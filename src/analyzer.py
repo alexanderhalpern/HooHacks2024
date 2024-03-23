@@ -11,10 +11,10 @@ class Analyzer:
 
 
     # is user input good enough
-    def judge_attempt(self, reference_file, user_file):
+    def judge_attempt(self, reference_midi, user_midi):
 
         # compare the files
-        errors = self.midi_compare(reference_file, user_file)
+        errors = self.midi_compare(reference_midi, user_midi)
 
         sufficient = True
         match self.judgement_level:
