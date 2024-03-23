@@ -9,8 +9,6 @@ class Analyzer:
         self.judgement_level = judgement_level
         pass
 
-    def analyze(self, song : mido.MidiFile):
-        pass
 
     # is user input good enough
     def judge_attempt(self, reference_file, user_file):
@@ -33,12 +31,48 @@ class Analyzer:
             case "intermediate":
                 pass
 
-        return sufficient, errors
+        return sufficient, self.error_timeline(errors)
+
+
+    # create a timeline of what mistake(s) were made when
+    def error_timeline(self, errors):
+
+        grouped_errors = {}
+        for key in errors:
+            for error in errors[key]:
+                if error["time"] in grouped_errors:
+                    grouped_errors[error["time"]]["errors"].append((key, error))
+                    if key in grouped_errors[error["time"]["types"]]:
+                        grouped_errors[error["time"]["types"]][key] += 1
+                    else:
+                        grouped_errors[error["time"]["types"]][key] = 1
+                else:
+                    grouped_errors[error["time"]] = {"errors": [(key, error)], "types": {key: 1}}
+
+        # classify each event as "wrong_notes", "early_timing", "late_timing", "missing_notes", "extra_notes"
+        for time in grouped_errors:
+
+            # if all the errors at this time are the same type, then we can classify the event as that type
+            if len(grouped_errors[time]["types"]) == 1:
+                error_type = list(grouped_errors[time]["types"].keys())[0]
+
+                if error_type == "timing_issues":
+                    if grouped_errors[time]["errors"][0][1]["reference_time"] > grouped_errors[time]["errors"][0][1]["user_time"]:
+                        error_type = "early_timing"
+                    else:
+                        error_type = "late_timing"
+
+                grouped_errors[time]["type"] = error_type
+
+            # if there are multiple types of errors at this time, then we can classify the event as "wrong_notes"
+            else:
+                grouped_errors[time]["type"] = "wrong_notes"
+
+        return grouped_errors
 
 
 
-
-# find all the mistakes
+    # find all the mistakes
     def midi_compare(self, reference_file, user_file):
         reference_midi = self.quantize_midi(reference_file)
         user_midi = self.quantize_midi(user_file)
@@ -188,4 +222,13 @@ class Analyzer:
         quantizer = quantize_matrix(matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
         return matrix_to_mid(quantizer)
 
-# pick a mistake to fix this time
+if __name__ == '__main__':
+    # Example usage
+    analyzer = Analyzer()
+    reference_file = "assets/midi/twinkle-twinkle-little-star.mid"
+    user_file = "assets/midi/twinkle-twinkle-bad.mid"
+    judgement, errors = analyzer.judge_attempt(reference_file, user_file)
+
+    # save the result to a file with indent
+    with open("errors.json", "w") as f:
+        f.write(json.dumps(errors, indent=4))
