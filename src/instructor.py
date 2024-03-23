@@ -7,7 +7,7 @@ from typing import List
 
 class Instructor:
 
-    time_per_segment = 3
+    time_per_segment = 1
 
     def __init__(self, player: Player, analyzer: Analyzer) -> None:
         """
@@ -84,7 +84,8 @@ class Instructor:
                 if current_ticks + msg.time > ticks_per_segment:
                     if len(current_track) > 0:
                         snippets.append(current_snippet)
-                    current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+                    current_snippet = MidiFile(
+                        ticks_per_beat=input_midi.ticks_per_beat)
                     current_track = MidiTrack()
                     current_snippet.tracks.append(current_track)
                     current_ticks = 0
