@@ -20,7 +20,7 @@ class Instructor:
         Returns:
             None
         """
-        # self.type = "friendly"
+        self.type = "friendly"
         self.player = player
         self.analyzer = analyzer
 
@@ -58,8 +58,6 @@ class Instructor:
             if not is_sufficient:
                 continue
             current_snippet_idx += 1
-
-        # return
 
     def _get_song_snippets(self, input_midi: MidiFile) -> List[MidiFile]:
         """

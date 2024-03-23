@@ -6,11 +6,10 @@ import mido
 
 def main():
     # Load midi file
-    input_song_midi = mido.MidiFile("twinkle.mid")
+    input_song_midi = mido.MidiFile("../assets/midi/twinkle-twinkle-little-star.mid")
 
     # create an instructor to teach you the song
-    # instructor = Instructor(Player(), Analyzer())
-    instructor = Instructor(None, None)
+    instructor = Instructor(None, Analyzer())
 
     # start the lesson
     instructor.lesson(input_song_midi)
