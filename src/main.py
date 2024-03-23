@@ -9,7 +9,7 @@ def main():
     input_song_midi = mido.MidiFile("../assets/midi/twinkle-twinkle-little-star.mid")
 
     # create an instructor to teach you the song
-    instructor = Instructor(None, Analyzer())
+    instructor = Instructor(Player(), Analyzer())
 
     # start the lesson
     instructor.lesson(input_song_midi)
