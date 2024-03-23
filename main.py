@@ -1,6 +1,22 @@
 import pygame
 import piano_lists as pl
 from pygame import mixer
+import pygame.midi
+
+pygame.midi.init()
+
+# Print available MIDI devices
+num_devices = pygame.midi.get_count()
+print("Available MIDI devices:")
+for i in range(num_devices):
+    info = pygame.midi.get_device_info(i)
+    device_type = "Input" if info[2] == 1 else "Output"
+    print(f"Device ID {i}: {info[1].decode()} ({device_type})")
+
+# Open a MIDI input port
+# You'll need to set this device_id based on the printed list of available devices
+device_id = int(input("Enter the Device ID to use: "))
+midi_input = pygame.midi.Input(device_id)
 
 pygame.init()
 pygame.mixer.set_num_channels(50)
@@ -165,37 +181,13 @@ def draw_title_bar():
 
 run = True
 while run:
-    left_dict = {'Z': f'C{left_oct}',
-                 'S': f'C#{left_oct}',
-                 'X': f'D{left_oct}',
-                 'D': f'D#{left_oct}',
-                 'C': f'E{left_oct}',
-                 'V': f'F{left_oct}',
-                 'G': f'F#{left_oct}',
-                 'B': f'G{left_oct}',
-                 'H': f'G#{left_oct}',
-                 'N': f'A{left_oct}',
-                 'J': f'A#{left_oct}',
-                 'M': f'B{left_oct}'}
-
-    right_dict = {'R': f'C{right_oct}',
-                  '5': f'C#{right_oct}',
-                  'T': f'D{right_oct}',
-                  '6': f'D#{right_oct}',
-                  'Y': f'E{right_oct}',
-                  'U': f'F{right_oct}',
-                  '8': f'F#{right_oct}',
-                  'I': f'G{right_oct}',
-                  '9': f'G#{right_oct}',
-                  'O': f'A{right_oct}',
-                  '0': f'A#{right_oct}',
-                  'P': f'B{right_oct}'}
     timer.tick(fps)
     screen.fill('gray')
     white_keys, black_keys, active_whites, active_blacks = draw_piano(
         active_whites, active_blacks)
     draw_hands(right_oct, left_oct, right_hand, left_hand)
     draw_title_bar()
+    # Check for MIDI events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -210,26 +202,6 @@ while run:
                 if white_keys[i].collidepoint(event.pos) and not black_key:
                     white_sounds[i].play(0, 3000)
                     active_whites.append([i, 30])
-        if event.type == pygame.TEXTINPUT:
-            if event.text.upper() in left_dict:
-                if left_dict[event.text.upper()][1] == '#':
-                    index = black_labels.index(left_dict[event.text.upper()])
-                    black_sounds[index].play(0, 1000)
-                    active_blacks.append([index, 30])
-                else:
-                    index = white_notes.index(left_dict[event.text.upper()])
-                    white_sounds[index].play(0, 1000)
-                    active_whites.append([index, 30])
-            if event.text.upper() in right_dict:
-                if right_dict[event.text.upper()][1] == '#':
-                    index = black_labels.index(right_dict[event.text.upper()])
-                    black_sounds[index].play(0, 1000)
-                    active_blacks.append([index, 30])
-                else:
-                    index = white_notes.index(right_dict[event.text.upper()])
-                    white_sounds[index].play(0, 1000)
-                    active_whites.append([index, 30])
-
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RIGHT:
                 if right_oct < 8:
@@ -243,6 +215,55 @@ while run:
             if event.key == pygame.K_DOWN:
                 if left_oct > 0:
                     left_oct -= 1
+    if midi_input.poll():
+        midi_events = midi_input.read(10)
+        # Process MIDI events
+        for event in midi_events:
+            midi_data = event[0]
+            status, note, velocity, _ = midi_data
+            print(status, note, velocity)
 
+            # Map MIDI notes to piano keys here
+            # This is an example mapping; you'll need to adjust it based on your setup
+            if velocity > 0:
+                # piano_notes = ['A0', 'A0#', 'B0', 'C1', 'C1#', 'D1', 'D1#', 'E1', 'F1', 'F1#', 'G1', 'G1#',
+                #                'A1', 'A1#', 'B1', 'C2', 'C2#', 'D2', 'D2#', 'E2', 'F2', 'F2#', 'G2', 'G2#',
+                #                'A2', 'A2#', 'B2', 'C3', 'C3#', 'D3', 'D3#', 'E3', 'F3', 'F3#', 'G3', 'G3#',
+                #                'A3', 'A3#', 'B3', 'C4', 'C4#', 'D4', 'D4#', 'E4', 'F4', 'F4#', 'G4', 'G4#',
+                #                'A4', 'A4#', 'B4', 'C5', 'C5#', 'D5', 'D5#', 'E5', 'F5', 'F5#', 'G5', 'G5#',
+                #                'A5', 'A5#', 'B5', 'C6', 'C6#', 'D6', 'D6#', 'E6', 'F6', 'F6#', 'G6', 'G6#',
+                #                'A6', 'A6#', 'B6', 'C7', 'C7#', 'D7', 'D7#', 'E7', 'F7', 'F7#']
+
+                #    convert midi numbers to note names. Always use flats.
+                # // Gb7 is highest note on 88 key keyboard
+                # // A0 is lowest note on 88 key keyboard
+                # // do this in python
+                # // 21 is A0
+
+                # fetch the note name from the piano_notes list
+                note_index = note - 21
+                note_name = piano_notes[note_index]
+                # piano_notes[note_index].play()
+
+                if note_name in black_notes:
+                    black_index = black_notes.index(note_name)
+                    black_sounds[black_index].play()
+                    active_blacks.append([black_index, 30])
+                if note_name in white_notes:
+                    white_index = white_notes.index(note_name)
+                    white_sounds[white_index].play()
+                    active_whites.append([white_index, 30])
+
+                active_whites.append([note_index, 30])
+                print(note_name)
+
+            elif status == 128:  # Note off
+                # Handle note off if necessary
+                pass
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
     pygame.display.flip()
+midi_input.close()
+pygame.midi.quit()
 pygame.quit()
