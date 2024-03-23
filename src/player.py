@@ -11,11 +11,11 @@ class Player:
         pass
 
     # play a given midi object (and light up keys)
-    def play(self, song):
+    def play(self, song : mido.MidiFile):
         pass
 
     # record user input (light up key green if correct red if wrong)
-    def record_attempt(self, song):
+    def record_attempt(self, song : mido.MidiFile):
 
         # start a blank mide file
         attempt = mido.MidiFile()

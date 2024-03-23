@@ -9,7 +9,7 @@ class Instructor:
         self.analyzer = analyzer
 
     # def lesson(song)
-    def lesson(self, song):
+    def lesson(self, song : mido.MidiFile):
 
         # copy the song properties (tempo, time signature, etc.)
         # don't copy the notes
