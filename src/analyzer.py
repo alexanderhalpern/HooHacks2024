@@ -24,7 +24,7 @@ class Analyzer:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:
-                        if abs(issue["reference_time"] - issue["user_time"]) > 100: # TODO: find a good threshold
+                        if abs(issue["reference_time"] - issue["time"]) > 100: # TODO: find a good threshold
                             sufficient = False
                             break
 
@@ -42,10 +42,10 @@ class Analyzer:
             for error in errors[key]:
                 if error["time"] in grouped_errors:
                     grouped_errors[error["time"]]["errors"].append((key, error))
-                    if key in grouped_errors[error["time"]["types"]]:
-                        grouped_errors[error["time"]["types"]][key] += 1
+                    if key in grouped_errors[error["time"]]["types"]:
+                        grouped_errors[error["time"]]["types"][key] += 1
                     else:
-                        grouped_errors[error["time"]["types"]][key] = 1
+                        grouped_errors[error["time"]]["types"][key] = 1
                 else:
                     grouped_errors[error["time"]] = {"errors": [(key, error)], "types": {key: 1}}
 
@@ -57,7 +57,7 @@ class Analyzer:
                 error_type = list(grouped_errors[time]["types"].keys())[0]
 
                 if error_type == "timing_issues":
-                    if grouped_errors[time]["errors"][0][1]["reference_time"] > grouped_errors[time]["errors"][0][1]["user_time"]:
+                    if grouped_errors[time]["errors"][0][1]["reference_time"] > grouped_errors[time]["errors"][0][1]["time"]:
                         error_type = "early_timing"
                     else:
                         error_type = "late_timing"
@@ -120,6 +120,25 @@ class Analyzer:
 
         while i > 0 or j > 0:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
+
+                # check for timing issues (notes are played too far from the reference)
+                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0: # TODO: find a good threshold
+
+                    # if, in the reference, there are two notes of the same pitch played in a row
+                    if i > 1 and ref_notes[i - 1][0] == ref_notes[i - 2][0]:
+
+                        # check if the user got the other note right (if not, it's a timing issue)
+                        if j > 1 and user_notes[j - 2][0] == ref_notes[i - 2][0]:
+                            i -= 1
+                            j -= 1
+                            continue
+
+                        errors["timing_issues"].append({
+                            "reference_pitch": ref_notes[i - 1][0],
+                            "reference_time": ref_notes[i - 1][1],
+                            "time": user_notes[j - 1][1]
+                        })
+
                 # No error, move to previous notes
                 i -= 1
                 j -= 1
@@ -169,8 +188,6 @@ class Analyzer:
                     incorrect_pitches.remove(closest_pitch[0])
                     incorrect_pitches.pop(0)
 
-                # if the user played the correct pitch at the wrong time
-                # TODO
 
                 # if we didn't find a matching pitch, then the user played an extra note
                 else:
@@ -211,6 +228,24 @@ class Analyzer:
                     })
                     incorrect_pitches.pop(0)
 
+        # look through missing/extra notes to see if they were just played at the wrong time
+        i = 0
+        while i < len(errors["missing_notes"]):
+            missing_note = errors["missing_notes"][i]
+            for j in range(len(errors["extra_notes"])):
+                extra_note = errors["extra_notes"][j]
+                if abs(missing_note["time"] - extra_note["time"]) < 400 and missing_note["reference_pitch"] == extra_note["user_pitch"]:
+                    errors["timing_issues"].append({
+                        "reference_pitch": missing_note["reference_pitch"],
+                        "reference_time": missing_note["time"],
+                        "time": extra_note["time"],
+                    })
+                    errors["missing_notes"].pop(i)
+                    errors["extra_notes"].pop(j)
+                    i -= 1
+                    break
+            i += 1
+
         return errors
 
     def clean_midi(self, mid):
@@ -225,8 +260,8 @@ class Analyzer:
 if __name__ == '__main__':
     # Example usage
     analyzer = Analyzer()
-    reference_file = "assets/midi/twinkle-twinkle-little-star.mid"
-    user_file = "assets/midi/twinkle-twinkle-bad.mid"
+    reference_file = "../assets/midi/twinkle-twinkle-little-star.mid"
+    user_file = "../assets/midi/twinkle-twinkle-wrong-pitches.mid"
     judgement, errors = analyzer.judge_attempt(reference_file, user_file)
 
     # save the result to a file with indent
