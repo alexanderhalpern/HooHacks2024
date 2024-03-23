@@ -1,18 +1,21 @@
+from instructor import Instructor
 from player import Player
 from analyzer import Analyzer
 import mido
 
 
 def main():
+    # Load midi file
+    input_song_midi = mido.MidiFile("../assets/midi/twinkle-twinkle-little-star.mid")
 
-    # instructor.lesson(song)
-    bob = Player()
-    # bob.record_attempt()
-    midi_file = mido.MidiFile("output.mid")
-    # bob.demo(midi_file)
-    bob.record_attempt()
+    # create an instructor to teach you the song
+    instructor = Instructor(Player(), Analyzer())
 
-    pass
+    # start the lesson
+    instructor.lesson(input_song_midi)
+
+    # end the lesson
+    return
 
 
 if __name__ == "__main__":
