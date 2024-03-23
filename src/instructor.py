@@ -1,60 +1,98 @@
 import mido
+from mido import MidiFile, MidiTrack
+from player import Player
+from analyzer import Analyzer
+from typing import List
 
-# class instructor
+
 class Instructor:
 
-    def __init__(self, player, analyzer):
+    time_per_segment = 3
+
+    def __init__(self, player: Player, analyzer: Analyzer) -> None:
+        """
+        Create a new Instructor object
+
+        Args:
+            player (Player): The player object to use
+            analyzer (Analyzer): The analyzer object to use
+
+        Returns:
+            None
+        """
         self.type = "friendly"
         self.player = player
         self.analyzer = analyzer
 
     # def lesson(song)
-    def lesson(self, song : mido.MidiFile):
+    def lesson(self, input_song_midi: mido.MidiFile) -> None:
+        """
+        Teach the user the song.
 
-        # copy the song properties (tempo, time signature, etc.)
-        # don't copy the notes
-        student_song = mido.MidiFile()
-        student_song.ticks_per_beat = song.ticks_per_beat
-        student_song.type = song.type
+        Args:
+            input_song_midi (mido.MidiFile): The song to teach
 
-        # get all notes from the song
-        ref_notes = []
-        for track in song.tracks:
-            for msg in track:
-                if msg.type == 'note_on':
-                    ref_notes.append(msg.note)
-                if msg.type == 'note_off':
-                    ref_notes.append(msg.note)
-
-        # get all notes from the song
-        student_notes = [ref_notes[:10]]
+        Returns:
+            None
+        """
+        reference_snippets = self._get_song_snippets(input_song_midi)
 
         # loop until done
-        while True:
+        current_snippet_idx = 0
+        while len(reference_snippets) > 0:
 
             # *play* the next snippet
-            self.player.play(student_notes)
+            self.player.demo(reference_snippets[current_snippet_idx])
 
             # *get* user attempt
-            student_attempt = self.player.record_attempt(student_notes)
+            student_attempt = self.player.record_attempt(
+                reference_snippets[current_snippet_idx]
+            )
 
             # *analyze* their mistakes
-            (sufficient, mistakes) = self.analyzer.judge_attempt(student_attempt, student_notes)
+            (is_sufficient, mistakes) = self.analyzer.judge_attempt(
+                reference_midi=reference_snippets[current_snippet_idx],
+                played_midi=student_attempt,
+            )
 
-            # if they got it right
-            if sufficient:
+            if not is_sufficient:
+                continue
+            current_snippet_idx += 1
 
-                # add the next section to the snippet
-                student_notes.append(ref_notes[len(student_notes):len(student_notes)+10])
+    def _get_song_snippets(self, input_midi: MidiFile) -> List[MidiFile]:
+        """
+        Split a song into snippets of notes each of duration `time_per_segment`.
+        """
+        tempo = 500000  # Default MIDI tempo (500,000 microseconds per beat)
+        for track in input_midi.tracks:
+            for msg in track:
+                if msg.type == "set_tempo":
+                    tempo = msg.tempo
+                    break  # find first tempo and break
 
-            # else
-            else:
+        ticks_per_second = input_midi.ticks_per_beat * (1_000_000 / tempo)
+        ticks_per_segment = ticks_per_second * self.time_per_segment
 
-                # inform them (somehow) of mistakes
-                # TODO - implement this
-                pass
+        snippets = []
+        current_ticks = 0
+        current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+        current_track = MidiTrack()
+        current_snippet.tracks.append(current_track)
 
+        for track in input_midi.tracks:
+            for msg in track:
+                if current_ticks + msg.time > ticks_per_segment:
+                    if len(current_track) > 0:
+                        snippets.append(current_snippet)
+                    current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+                    current_track = MidiTrack()
+                    current_snippet.tracks.append(current_track)
+                    current_ticks = 0
 
-        # return
+                current_ticks += msg.time
+                current_track.append(msg)
 
+        if len(current_track) > 0:
+            snippets.append(current_snippet)
 
+        return snippets

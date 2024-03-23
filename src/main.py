@@ -1,25 +1,18 @@
-from src.instructor import Instructor
-from src.player import Player
-from src.analyzer import Analyzer
-
-# main loop
+from instructor import Instructor
 from player import Player
+from analyzer import Analyzer
+import mido
 
 
 def main():
-
-    # pick a song
-    song = None
+    # Load midi file
+    input_song_midi = mido.MidiFile("../assets/midi/twinkle-twinkle-little-star.mid")
 
     # create an instructor to teach you the song
     instructor = Instructor(Player(), Analyzer())
 
-    # instructor.lesson(song)
-    bob = Player()
-    bob.record_attempt()
-    pass
     # start the lesson
-    instructor.lesson(song)
+    instructor.lesson(input_song_midi)
 
     # end the lesson
     return
