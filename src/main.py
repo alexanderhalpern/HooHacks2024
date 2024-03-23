@@ -1,16 +1,21 @@
-
+from src.instructor import Instructor
+from src.player import Player
+from src.analyzer import Analyzer
 
 # main loop
 
 def main():
 
     # pick a song
+    song = None
 
     # create an instructor to teach you the song
-    # create a student to learn the song
+    instructor = Instructor(Player(), Analyzer())
 
-    # instructor.lesson(song)
+    # start the lesson
+    instructor.lesson(song)
 
-    pass
+    # end the lesson
+    return
 
 
