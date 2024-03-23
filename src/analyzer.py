@@ -179,11 +179,12 @@ class Analyzer:
                 if len(also_played) > 0:
                     # find the closest pitch
                     closest_pitch = min(also_played, key=lambda x: x[1])
-                    errors["incorrect_pitches"].append({
-                        "reference_pitch": closest_pitch[0]["reference_pitch"],
-                        "user_pitch": pitch["user_pitch"],
-                        "time": pitch["time"]
-                    })
+                    if closest_pitch[0]["reference_pitch"] != pitch["user_pitch"]:
+                        errors["incorrect_pitches"].append({
+                            "reference_pitch": closest_pitch[0]["reference_pitch"],
+                            "user_pitch": pitch["user_pitch"],
+                            "time": pitch["time"]
+                        })
                     # remove the closest pitch from the list
                     incorrect_pitches.remove(closest_pitch[0])
                     incorrect_pitches.pop(0)
@@ -211,11 +212,12 @@ class Analyzer:
                 if len(also_played) > 0:
                     # find the closest pitch
                     closest_pitch = min(also_played, key=lambda x: x[1])
-                    errors["incorrect_pitches"].append({
-                        "reference_pitch": pitch["reference_pitch"],
-                        "user_pitch": closest_pitch[0]["user_pitch"],
-                        "time": pitch["time"]
-                    })
+                    if closest_pitch[0]["user_pitch"] != pitch["reference_pitch"]:
+                        errors["incorrect_pitches"].append({
+                            "reference_pitch": pitch["reference_pitch"],
+                            "user_pitch": closest_pitch[0]["user_pitch"],
+                            "time": pitch["time"]
+                        })
                     # remove the closest pitch from the list
                     incorrect_pitches.remove(closest_pitch[0])
                     incorrect_pitches.pop(0)
@@ -261,7 +263,7 @@ if __name__ == '__main__':
     # Example usage
     analyzer = Analyzer()
     reference_file = "../assets/midi/twinkle-twinkle-little-star.mid"
-    user_file = "../assets/midi/twinkle-twinkle-wrong-pitches.mid"
+    user_file = "../assets/midi/twinkle-twinkle-extra-missing-shifted.mid"
     judgement, errors = analyzer.judge_attempt(reference_file, user_file)
 
     # save the result to a file with indent
