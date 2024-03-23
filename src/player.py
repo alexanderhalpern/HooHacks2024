@@ -49,7 +49,7 @@ class Player:
             'assets/OldStandardTT-Bold.ttf', 10)
         self.fps = 60
         self.timer = pygame.time.Clock()
-        self.WIDTH = 52 * 35
+        self.WIDTH = 36 * 25  # mess with this
         self.HEIGHT = 400
         self.screen = pygame.display.set_mode([self.WIDTH, self.HEIGHT])
         self.white_sounds = []
@@ -58,6 +58,12 @@ class Player:
         self.active_blacks = []
         self.left_oct = 4
         self.right_oct = 5
+        self.left_hand = pl.left_hand
+        self.right_hand = pl.right_hand
+        self.piano_notes = pl.piano_notes
+        self.white_notes = pl.white_notes
+        self.black_notes = pl.black_notes
+        self.black_labels = pl.black_labels
 
         for i in range(len(self.white_notes)):
             self.white_sounds.append(mixer.Sound(
