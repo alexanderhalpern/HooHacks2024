@@ -1,5 +1,3 @@
-
-
 # play a given midi object (and light up keys)
 
 # record user input (light up key green if correct red if wrong)
@@ -41,12 +39,10 @@ class Player:
 
         pygame.init()
         pygame.mixer.set_num_channels(50)
-        self.font = pygame.font.Font('assets/OldStandardTT-Bold.ttf', 48)
-        self.medium_font = pygame.font.Font(
-            'assets/OldStandardTT-Bold.ttf', 28)
-        self.small_font = pygame.font.Font('assets/OldStandardTT-Bold.ttf', 16)
-        self.real_small_font = pygame.font.Font(
-            'assets/OldStandardTT-Bold.ttf', 10)
+        self.font = pygame.font.Font("assets/OldStandardTT-Bold.ttf", 48)
+        self.medium_font = pygame.font.Font("assets/OldStandardTT-Bold.ttf", 28)
+        self.small_font = pygame.font.Font("assets/OldStandardTT-Bold.ttf", 16)
+        self.real_small_font = pygame.font.Font("assets/OldStandardTT-Bold.ttf", 10)
         self.fps = 60
         self.timer = pygame.time.Clock()
         self.WIDTH = 52 * 35
@@ -60,42 +56,63 @@ class Player:
         self.right_oct = 5
 
         for i in range(len(self.white_notes)):
-            self.white_sounds.append(mixer.Sound(
-                f'assets\\notes\\{self.white_notes[i]}.wav'))
+            self.white_sounds.append(
+                mixer.Sound(f"assets\\notes\\{self.white_notes[i]}.wav")
+            )
 
         for i in range(len(self.black_notes)):
-            self.black_sounds.append(mixer.Sound(
-                f'assets\\notes\\{self.black_notes[i]}.wav'))
+            self.black_sounds.append(
+                mixer.Sound(f"assets\\notes\\{self.black_notes[i]}.wav")
+            )
+
+    def demo():
+        pass
 
     def draw_piano(self, whites, blacks):
         white_rects = []
         for i in range(36):
             rect = pygame.draw.rect(
-                self.screen, 'white', [i * 35, self.HEIGHT - 300, 35, 300], 0, 2)
+                self.screen, "white", [i * 35, self.HEIGHT - 300, 35, 300], 0, 2
+            )
             white_rects.append(rect)
-            pygame.draw.rect(self.screen, 'black', [
-                i * 35, self.HEIGHT - 300, 35, 300], 2, 2)
-            key_label = self.small_font.render(
-                self.white_notes[i], True, 'black')
+            pygame.draw.rect(
+                self.screen, "black", [i * 35, self.HEIGHT - 300, 35, 300], 2, 2
+            )
+            key_label = self.small_font.render(self.white_notes[i], True, "black")
             self.screen.blit(key_label, (i * 35 + 3, self.HEIGHT - 20))
         skip_count = 0
         last_skip = 2
         skip_track = 2
         black_rects = []
         for i in range(25):
-            rect = pygame.draw.rect(self.screen, 'black', [
-                                    23 + (i * 35) + (skip_count * 35), self.HEIGHT - 300, 24, 200], 0, 2)
+            rect = pygame.draw.rect(
+                self.screen,
+                "black",
+                [23 + (i * 35) + (skip_count * 35), self.HEIGHT - 300, 24, 200],
+                0,
+                2,
+            )
             for q in range(len(blacks)):
                 if blacks[q][0] == i:
                     if blacks[q][1] > 0:
-                        pygame.draw.rect(self.screen, 'green', [
-                            23 + (i * 35) + (skip_count * 35), self.HEIGHT - 300, 24, 200], 0, 2)
+                        pygame.draw.rect(
+                            self.screen,
+                            "green",
+                            [
+                                23 + (i * 35) + (skip_count * 35),
+                                self.HEIGHT - 300,
+                                24,
+                                200,
+                            ],
+                            0,
+                            2,
+                        )
                         blacks[q][1] -= 1
 
-            key_label = self.real_small_font.render(
-                self.black_labels[i], True, 'white')
-            self.screen.blit(key_label, (25 + (i * 35) +
-                                         (skip_count * 35), self.HEIGHT - 120))
+            key_label = self.real_small_font.render(self.black_labels[i], True, "white")
+            self.screen.blit(
+                key_label, (25 + (i * 35) + (skip_count * 35), self.HEIGHT - 120)
+            )
             black_rects.append(rect)
             skip_track += 1
             if last_skip == 2 and skip_track == 3:
@@ -110,8 +127,9 @@ class Player:
         for i in range(len(whites)):
             if whites[i][1] > 0:
                 j = whites[i][0]
-                pygame.draw.rect(self.screen, 'green', [
-                    j * 35, self.HEIGHT - 100, 35, 100], 0, 2)
+                pygame.draw.rect(
+                    self.screen, "green", [j * 35, self.HEIGHT - 100, 35, 100], 0, 2
+                )
                 whites[i][1] -= 1
 
         return white_rects, black_rects, whites, blacks
@@ -120,9 +138,10 @@ class Player:
         run = True
         while run:
             self.timer.tick(self.fps)
-            self.screen.fill('gray')
-            self.white_keys, self.black_keys, self.active_whites, self.active_blacks = self.draw_piano(
-                self.active_whites, self.active_blacks)
+            self.screen.fill("gray")
+            self.white_keys, self.black_keys, self.active_whites, self.active_blacks = (
+                self.draw_piano(self.active_whites, self.active_blacks)
+            )
             # Check for MIDI events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

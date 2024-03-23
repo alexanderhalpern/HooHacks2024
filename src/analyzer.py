@@ -1,13 +1,15 @@
 import mido
 
+
 class Analyzer:
     def __init__(self):
         pass
 
-    def analyze(self, song : mido.MidiFile):
+    def judge_attempt(self, reference_midi: mido.MidiFile, played_midi: mido.MidiFile):
         pass
-# is user input good enough
 
+
+# is user input good enough
 
 
 # find all the mistakes

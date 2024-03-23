@@ -1,31 +1,22 @@
-from src.instructor import Instructor
-from src.player import Player
-from src.analyzer import Analyzer
-
-# main loop
+from instructor import Instructor
 from player import Player
+from analyzer import Analyzer
+import mido
 
 
 def main():
-
-    # pick a song
-    song = None
+    # Load midi file
+    input_song_midi = mido.MidiFile("twinkle.mid")
 
     # create an instructor to teach you the song
-    instructor = Instructor(Player(), Analyzer())
+    # instructor = Instructor(Player(), Analyzer())
+    instructor = Instructor(None, None)
 
-<<<<<<< HEAD
-    # instructor.lesson(song)
-    bob = Player()
-    bob.record_attempt()
-    pass
-=======
     # start the lesson
-    instructor.lesson(song)
+    instructor.lesson(input_song_midi)
 
     # end the lesson
     return
->>>>>>> c96d5e2cabb5406e94d1e9cf949821fd25565e8d
 
 
 if __name__ == "__main__":
