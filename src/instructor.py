@@ -56,6 +56,7 @@ class Instructor:
             )
 
             if not is_sufficient:
+                self._correct_mistakes(mistakes)
                 continue
             current_snippet_idx += 1
 
