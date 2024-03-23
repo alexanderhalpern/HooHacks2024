@@ -1,5 +1,5 @@
 import pygame
-import piano_lists as pl
+import src.piano_lists as pl
 from pygame import mixer
 import pygame.midi
 
@@ -55,7 +55,7 @@ pygame.display.set_caption("Pete's Python Piano")
 
 def draw_piano(whites, blacks):
     white_rects = []
-    for i in range(52):
+    for i in range(36):
         rect = pygame.draw.rect(
             screen, 'white', [i * 35, HEIGHT - 300, 35, 300], 0, 2)
         white_rects.append(rect)
@@ -67,7 +67,7 @@ def draw_piano(whites, blacks):
     last_skip = 2
     skip_track = 2
     black_rects = []
-    for i in range(36):
+    for i in range(25):
         rect = pygame.draw.rect(screen, 'black', [
                                 23 + (i * 35) + (skip_count * 35), HEIGHT - 300, 24, 200], 0, 2)
         for q in range(len(blacks)):

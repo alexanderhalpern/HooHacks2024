@@ -1,6 +1,8 @@
 
 
 # main loop
+from player import Player
+
 
 def main():
 
@@ -10,7 +12,10 @@ def main():
     # create a student to learn the song
 
     # instructor.lesson(song)
-
+    bob = Player()
+    bob.record_attempt()
     pass
 
 
+if __name__ == "__main__":
+    main()
