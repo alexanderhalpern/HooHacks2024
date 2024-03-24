@@ -86,7 +86,9 @@ class Instructor:
         """
         # if the user made a single mistake, tell them how to correct it
         if len(mistake_timeline) == 1:
-            advice = self._describe_mistake(mistake_timeline[0])
+            # get the time of the mistake (first key in the dictionary)
+            time = list(mistake_timeline.keys())[0]
+            advice = f"Time {time}: " + self._describe_mistake(mistake_timeline[0])
 
             # TODO connect to user interface
             print(
@@ -97,8 +99,8 @@ class Instructor:
 
         # if the user made multiple mistakes, correct the most severe one
         else:
-            worst_mistake = self._find_worst_mistake(mistake_timeline)
-            advice = self._describe_mistake(worst_mistake)
+            worst_mistake, time = self._find_worst_mistake(mistake_timeline)
+            advice = f"Time {time}: " + self._describe_mistake(worst_mistake)
 
             # TODO connect to user interface
             print("Here's one thing you can fix to make your performance even better:")

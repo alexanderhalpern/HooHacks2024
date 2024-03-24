@@ -25,8 +25,12 @@ class Analyzer:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:
+<<<<<<< HEAD
                         # TODO: find a good threshold
                         if abs(issue["reference_time"] - issue["time"]) > 100:
+=======
+                        if abs(issue["reference_time"] - issue["time"]) > 1000: # TODO: find a good threshold
+>>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
                             sufficient = False
                             break
 
@@ -40,10 +44,9 @@ class Analyzer:
     def error_timeline(self, errors):
 
         grouped_errors = {}
-
-        i = 0
         for key in errors:
             for error in errors[key]:
+<<<<<<< HEAD
                 error['time'] = i
                 i += 1
                 if error["time"] in grouped_errors:
@@ -51,11 +54,22 @@ class Analyzer:
                                    ]["errors"].append((key, error))
                     if key in grouped_errors[error["time"]]["types"]:
                         grouped_errors[error["time"]]["types"][key] += 1
+=======
+                time = self.round(error["time"], 5000)
+                if time in grouped_errors:
+                    grouped_errors[time]["errors"].append((key, error))
+                    if key in grouped_errors[time]["types"]:
+                        grouped_errors[time]["types"][key] += 1
+>>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
                     else:
-                        grouped_errors[error["time"]]["types"][key] = 1
+                        grouped_errors[time]["types"][key] = 1
                 else:
+<<<<<<< HEAD
                     grouped_errors[error["time"]] = {
                         "errors": [(key, error)], "types": {key: 1}}
+=======
+                    grouped_errors[time] = {"errors": [(key, error)], "types": {key: 1}}
+>>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
 
         # classify each event as "wrong_notes", "early_timing", "late_timing", "missing_notes", "extra_notes"
         for time in grouped_errors:
@@ -99,6 +113,9 @@ class Analyzer:
         ref_track = reference_midi.merged_track
         user_track = user_midi.merged_track
 
+        self.convert_timing_to_absolute(ref_track)
+        self.convert_timing_to_absolute(user_track)
+
         ref_notes = []
         user_notes = []
 
@@ -131,13 +148,13 @@ class Analyzer:
         while i > 0 or j > 0:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
 
-                i -= 1
-                j -= 1
-                continue
-
                 # check for timing issues (notes are played too far from the reference)
+<<<<<<< HEAD
                 # TODO: find a good threshold
                 if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0:
+=======
+                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 10: # TODO: find a good threshold
+>>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
 
                     # if, in the reference, there are two notes of the same pitch played in a row
                     if i > 1 and ref_notes[i - 1][0] == ref_notes[i - 2][0]:
@@ -247,14 +264,12 @@ class Analyzer:
                     incorrect_pitches.pop(0)
 
         # look through missing/extra notes to see if they were just played at the wrong time
-        return errors
-
         i = 0
         while i < len(errors["missing_notes"]):
             missing_note = errors["missing_notes"][i]
             for j in range(len(errors["extra_notes"])):
                 extra_note = errors["extra_notes"][j]
-                if abs(missing_note["time"] - extra_note["time"]) < 400 and missing_note["reference_pitch"] == extra_note["user_pitch"]:
+                if abs(missing_note["time"] - extra_note["time"]) < 3000 and missing_note["reference_pitch"] == extra_note["user_pitch"]:
                     errors["timing_issues"].append({
                         "reference_pitch": missing_note["reference_pitch"],
                         "reference_time": missing_note["time"],
@@ -279,12 +294,26 @@ class Analyzer:
             matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
         return matrix_to_mid(quantizer)
 
+<<<<<<< HEAD
+=======
+    def convert_timing_to_absolute(self, track):
+        time = 0
+        track[0].time = 0
+        for msg in track[1:]:
+            time += msg.time
+            msg.time = time
+
+        return track
+
+    def round(self, num, step):
+        return round(num / step) * step
+>>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
 
 if __name__ == '__main__':
     # Example usage
     analyzer = Analyzer()
     reference_file = "../assets/midi/twinkle-twinkle-little-star.mid"
-    user_file = "../assets/midi/twinkle-twinkle-extra-missing-shifted.mid"
+    user_file = "../assets/midi/twinkle-twinkle-early-chord.mid"
     judgement, errors = analyzer.judge_attempt(reference_file, user_file)
 
     # save the result to a file with indent
