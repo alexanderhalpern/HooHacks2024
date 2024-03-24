@@ -1,5 +1,7 @@
 import mido
 from mido import MidiFile, MidiTrack
+from music21 import converter, stream, note
+
 from player import Player
 from analyzer import Analyzer
 from typing import List
@@ -185,21 +187,129 @@ class Instructor:
         current_track = MidiTrack()
         current_snippet.tracks.append(current_track)
 
+        # merge all tracks into one
+        merged_track = MidiTrack()
         for track in input_midi.tracks:
             for msg in track:
-                if current_ticks + msg.time > ticks_per_segment:
-                    if len(current_track) > 0:
-                        snippets.append(current_snippet)
-                    current_snippet = MidiFile(
-                        ticks_per_beat=input_midi.ticks_per_beat)
-                    current_track = MidiTrack()
-                    current_snippet.tracks.append(current_track)
-                    current_ticks = 0
+                merged_track.append(msg)
 
-                current_ticks += msg.time
+        min_index = 0
+        i = 0
+        notes_per_segment = 3
+        for msg in merged_track:
+
+            if i >= min_index or len(current_track) >= notes_per_segment:
+                snippets.append(current_snippet)
+                current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+                current_track = MidiTrack()
+                current_snippet.tracks.append(current_track)
+                current_ticks = 0
+
+            # if the message is a not_on, find the corresponding note_off and make sure it's in the same snippet
+            if msg.type == "note_on":
                 current_track.append(msg)
+                current_ticks += msg.time
 
-        if len(current_track) > 0:
-            snippets.append(current_snippet)
+                # find the corresponding note_off
+                for note_off_msg in merged_track:
+                    if note_off_msg.type == "note_off" and note_off_msg.note == msg.note:
+                        min_index = merged_track.index(note_off_msg)
+
+            if msg.type == "note_off":
+                current_track.append(msg)
+                current_ticks += msg.time
+
+            i += 1
 
         return snippets
+
+def get_song_snippets(input_midi: MidiFile) -> List[MidiFile]:
+    """
+    Split a song into snippets of notes each of duration `time_per_segment`.
+    """
+
+    """# use music21 to split the song into snippets
+    myScore = converter.parse('../assets/midi/downloads/twinkle-twinkle-little-star.mid')
+    i = 1
+    snippets = []
+    while (measureStack := myScore.measure(i))[stream.Measure]:
+        notes = measureStack[note.Note]
+        snippets.append(notes)
+        i += 1
+
+    # create a list of snippets
+    snippets = []
+
+    return snippets"""
+
+
+    tempo = 500000  # Default MIDI tempo (500,000 microseconds per beat)
+    for track in input_midi.tracks:
+        for msg in track:
+            if msg.type == "set_tempo":
+                tempo = msg.tempo
+                break  # find first tempo and break
+
+    ticks_per_second = input_midi.ticks_per_beat * (1_000_000 / tempo)
+
+    snippets = []
+    current_ticks = 0
+    current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+    current_track = MidiTrack()
+    current_snippet.tracks.append(current_track)
+
+    # merge all tracks into one
+    merged_track = MidiTrack()
+    for track in input_midi.tracks:
+        for msg in track:
+            merged_track.append(msg)
+
+    notes_per_segment = 3
+
+    # pair up notes ahead of time (note_on, note_off)
+    note_pairs = []
+    assigned_noteoffs = [False for _ in range(len(merged_track))]
+    for i in range(len(merged_track)):
+        if merged_track[i].type == "note_on":
+            for j in range(i, len(merged_track)):
+                if assigned_noteoffs[j]:
+                    continue
+                if merged_track[j].type == "note_off" and merged_track[j].note == merged_track[i].note:
+                    note_pairs.append((i, j))
+                    assigned_noteoffs[j] = True
+                    break
+
+    min_cutoff = 1
+    i = 0
+    while i < note_pairs[-1][1]:
+        if len(current_track) < notes_per_segment:
+
+            # add the smallest number of sequential notes possible while keeping both pair members in the snippet
+            for pair in note_pairs:
+                if pair[0] >= i:
+                    for j in range(pair[0], pair[1] + 1):
+                        if merged_track[j].type == "note_on" or merged_track[j].type == "note_off":
+                            current_track.append(merged_track[j])
+                        if merged_track[j].type == "note_on":
+                            for pair in note_pairs:
+                                if pair[0] == j:
+                                    min_cutoff = max(min_cutoff, pair[1])
+                                    break
+                if len(current_track) >= notes_per_segment:
+                    break
+
+            if pair[1] >= min_cutoff:
+                snippets.append(current_snippet)
+                current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+                current_track = MidiTrack()
+                current_snippet.tracks.append(current_track)
+                i = pair[1]
+
+    return snippets
+
+
+
+if __name__ == '__main__':
+    file = mido.MidiFile('../assets/midi/downloads/untitled.mid')
+    snippets = get_song_snippets(file)
+    print(len(snippets))
