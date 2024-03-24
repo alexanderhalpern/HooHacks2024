@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from mido import MidiFile
+import urllib
 
 
 class SongFinder:
@@ -26,7 +27,10 @@ class SongFinder:
                 print(f"Found {len(search_results)} MIDI files:")
                 # donwload the first midi file
                 # TODO add a way to select which midi file to download
-                return self._download_midi(f'https://bitmidi.com{search_results[0][1]}')
+                for i in range(len(search_results)):
+                    midi = self._download_midi(f"https://bitmidi.com{search_results[i][1]}")
+                    if midi:
+                        return midi
             else:
                 print("No search results found.")
         else:
@@ -58,6 +62,14 @@ class SongFinder:
 
             download_route = soup.find('a', {"download": f'{title}'})['href']
             download_url = f"https://bitmidi.com{download_route}"
+
+            # if the file is too big, don't download it
+            #response = requests.head(download_url, allow_redirects=True)
+            #size = response.headers.get('content-length')
+            #if not size or int(size) > 5000:
+                #print("MIDI file is too big to download.")
+                #return
+
             # Send a GET request to the download URL with headers
             response = requests.get(download_url, headers=headers)
 
@@ -66,8 +78,11 @@ class SongFinder:
                 with open(f"../assets/midi/downloads/{title}", 'wb') as f:
                     f.write(response.content)
                     print(f"Downloaded MIDI file: {title}.mid")
-                    return MidiFile(f'../assets/midi/downloads/{title}')
+                return MidiFile(f'../assets/midi/downloads/{title}')
         else:
             print("Failed to download MIDI file.")
 
 
+if __name__ == '__main__':
+    sf = SongFinder()
+    sf.search_and_download_midi("twinkle twinkle little star")
