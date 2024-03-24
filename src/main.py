@@ -33,7 +33,7 @@ def main():
     # song = response.json()['song']
     # reformat the response from '/twinkle-3-mid' to '../assets/midi/downloads/twinkle-3.mid'
     # input_song_midi = mido.MidiFile(f"../assets/midi/downloads/{song}.mid")
-    input_song_midi = mido.MidiFile(f"assets/midi/chromatic.mid")
+    input_song_midi = mido.MidiFile(f"assets/midi/untitled.mid")
 
     # print(input_song_midi)
     # quit()

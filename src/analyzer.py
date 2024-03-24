@@ -21,21 +21,19 @@ class Analyzer:
         match self.judgement_level:
             case "beginner":
                 # beginners are not allowed to play incorrect notes or have severe timing issues
-                if len(errors["incorrect_pitches"]) + len(errors["missing_notes"]) + len(errors["extra_notes"]) > 0:
+                if len(errors["incorrect_pitches"]) > 0:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:
-<<<<<<< HEAD
                         # TODO: find a good threshold
-                        if abs(issue["reference_time"] - issue["time"]) > 100:
-=======
-                        if abs(issue["reference_time"] - issue["time"]) > 1000: # TODO: find a good threshold
->>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
+                        if abs(issue["reference_time"] - issue["time"]) > 1000:
                             sufficient = False
                             break
 
             case "intermediate":
                 pass
+
+        print(sufficient, errors)
 
         return sufficient, self.error_timeline(errors)
 
@@ -46,30 +44,16 @@ class Analyzer:
         grouped_errors = {}
         for key in errors:
             for error in errors[key]:
-<<<<<<< HEAD
-                error['time'] = i
-                i += 1
-                if error["time"] in grouped_errors:
-                    grouped_errors[error["time"]
-                                   ]["errors"].append((key, error))
-                    if key in grouped_errors[error["time"]]["types"]:
-                        grouped_errors[error["time"]]["types"][key] += 1
-=======
                 time = self.round(error["time"], 5000)
                 if time in grouped_errors:
                     grouped_errors[time]["errors"].append((key, error))
                     if key in grouped_errors[time]["types"]:
                         grouped_errors[time]["types"][key] += 1
->>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
                     else:
                         grouped_errors[time]["types"][key] = 1
                 else:
-<<<<<<< HEAD
-                    grouped_errors[error["time"]] = {
-                        "errors": [(key, error)], "types": {key: 1}}
-=======
-                    grouped_errors[time] = {"errors": [(key, error)], "types": {key: 1}}
->>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
+                    grouped_errors[time] = {"errors": [
+                        (key, error)], "types": {key: 1}}
 
         # classify each event as "wrong_notes", "early_timing", "late_timing", "missing_notes", "extra_notes"
         for time in grouped_errors:
@@ -95,8 +79,6 @@ class Analyzer:
     # find all the mistakes
 
     def midi_compare(self, reference_file, user_file):
-        print("reference_file", reference_file)
-        print("user_file", user_file)
         reference_midi = self.quantize_midi(reference_file)
         user_midi = self.quantize_midi(user_file)
 
@@ -149,12 +131,8 @@ class Analyzer:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
 
                 # check for timing issues (notes are played too far from the reference)
-<<<<<<< HEAD
                 # TODO: find a good threshold
-                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0:
-=======
-                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 10: # TODO: find a good threshold
->>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
+                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 10:
 
                     # if, in the reference, there are two notes of the same pitch played in a row
                     if i > 1 and ref_notes[i - 1][0] == ref_notes[i - 2][0]:
@@ -294,8 +272,6 @@ class Analyzer:
             matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
         return matrix_to_mid(quantizer)
 
-<<<<<<< HEAD
-=======
     def convert_timing_to_absolute(self, track):
         time = 0
         track[0].time = 0
@@ -307,7 +283,7 @@ class Analyzer:
 
     def round(self, num, step):
         return round(num / step) * step
->>>>>>> 082d83655c2c15c8477ebb229140c231efa7665b
+
 
 if __name__ == '__main__':
     # Example usage

@@ -8,7 +8,7 @@ import requests
 
 class Instructor:
 
-    time_per_segment = 10
+    time_per_segment = 1
 
     def __init__(self, player: Player, analyzer: Analyzer) -> None:
         """
@@ -37,14 +37,15 @@ class Instructor:
         Returns:
             None
         """
-        reference_snippets = self._get_song_snippets(input_song_midi)
-        # reference_snippets = [input_song_midi]
+        # reference_snippets = self._get_song_snippets(input_song_midi)
+        reference_snippets = [input_song_midi]
+
         # loop until done
         current_snippet_idx = 0
         while len(reference_snippets) > 0 and current_snippet_idx < len(reference_snippets):
 
             # requests.get('http://localhost:5000/setState?state=demoing')
-            #
+
             # *play* the next snippet
             self.player.demo(reference_snippets[current_snippet_idx])
 
@@ -55,17 +56,13 @@ class Instructor:
                 reference_snippets[current_snippet_idx]
             )
 
-            print(student_attempt)
-
             # requests.get('http://localhost:5000/setState?state=feedback')
 
             # *analyze* their mistakes
-            # is_sufficient, mistakes = self.analyzer.judge_attempt(
-            #     reference_midi=reference_snippets[current_snippet_idx],
-            #     user_midi=student_attempt,
-            # )
-            is_sufficient, mistakes = True, []
-            print(is_sufficient, mistakes)
+            is_sufficient, mistakes = self.analyzer.judge_attempt(
+                reference_midi=reference_snippets[current_snippet_idx],
+                user_midi=student_attempt,
+            )
 
             if not is_sufficient:
                 self._correct_mistakes(mistakes)
@@ -88,14 +85,13 @@ class Instructor:
         if len(mistake_timeline) == 1:
             # get the time of the mistake (first key in the dictionary)
             time = list(mistake_timeline.keys())[0]
-            advice = f"Time {time}: " + self._describe_mistake(mistake_timeline[0])
+            advice = f"Time {time}: " + \
+                self._describe_mistake(mistake_timeline[0])
 
             # TODO connect to user interface
             print(
                 "You're almost there! There's just one last thing to fix before we move on:")
-            # requests.get(
-            #     'http://localhost:5000/setFeedback?feedback=' + advice)
-            print(f"advice: {advice}")
+            # requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
 
         # if the user made multiple mistakes, correct the most severe one
         else:
@@ -104,9 +100,7 @@ class Instructor:
 
             # TODO connect to user interface
             print("Here's one thing you can fix to make your performance even better:")
-            # requests.get(
-            #     'http://localhost:5000/setFeedback?feedback=' + advice)
-            print(f"advice: {advice}")
+            # requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
 
     def _find_worst_mistake(self, mistake_timeline: dict) -> dict:
         """
@@ -120,10 +114,10 @@ class Instructor:
         """
 
         # if one mistake involves more notes than the others, return it
-        # counts = sorted([mistake["errors"]
-        #                for mistake in mistake_timeline], reverse=True)
-        # if counts[0] > counts[1]:
-        return mistake_timeline[0]
+        counts = sorted([len(mistake["errors"])
+                        for mistake in mistake_timeline], reverse=True)
+        if counts[0] > counts[1]:
+            return mistake_timeline[counts.index(counts[0])]
 
         # mistake type priority: "wrong_notes" > "missing_notes" > "extra_notes" > "early_timing" == "late_timing"
         # if multiple mistakes have the same number of notes, return the one with the highest priority
@@ -188,8 +182,6 @@ class Instructor:
 
         ticks_per_second = input_midi.ticks_per_beat * (1_000_000 / tempo)
         ticks_per_segment = ticks_per_second * self.time_per_segment
-
-        print("ticks_per_segment", ticks_per_segment)
 
         snippets = []
         current_ticks = 0
