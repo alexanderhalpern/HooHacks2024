@@ -21,10 +21,10 @@ midi_input = pygame.midi.Input(device_id)
 pygame.init()
 pygame.mixer.set_num_channels(50)
 
-font = pygame.font.Font('assets/OldStandardTT-Bold.ttf', 48)
-medium_font = pygame.font.Font('assets/OldStandardTT-Bold.ttf', 28)
-small_font = pygame.font.Font('assets/OldStandardTT-Bold.ttf', 16)
-real_small_font = pygame.font.Font('assets/OldStandardTT-Bold.ttf', 10)
+font = pygame.font.Font('../assets/OldStandardTT-Bold.ttf', 48)
+medium_font = pygame.font.Font('../assets/OldStandardTT-Bold.ttf', 28)
+small_font = pygame.font.Font('../assets/OldStandardTT-Bold.ttf', 16)
+real_small_font = pygame.font.Font('../assets/OldStandardTT-Bold.ttf', 10)
 fps = 60
 timer = pygame.time.Clock()
 WIDTH = 52 * 35

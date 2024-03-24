@@ -58,12 +58,12 @@ class Player:
         return pygame.midi.Input(device_id)
 
     def _init_fonts(self) -> Tuple[pygame.font.Font]:
-        font = pygame.font.Font("assets/OldStandardTT-Bold.ttf", 48)
+        font = pygame.font.Font("../assets/OldStandardTT-Bold.ttf", 48)
         medium_font = pygame.font.Font(
-            "assets/OldStandardTT-Bold.ttf", 28)
-        small_font = pygame.font.Font("assets/OldStandardTT-Bold.ttf", 16)
+            "../assets/OldStandardTT-Bold.ttf", 28)
+        small_font = pygame.font.Font("../assets/OldStandardTT-Bold.ttf", 16)
         real_small_font = pygame.font.Font(
-            "assets/OldStandardTT-Bold.ttf", 10)
+            "../assets/OldStandardTT-Bold.ttf", 10)
         return font, medium_font, small_font, real_small_font
 
     def _load_note_sounds(self) -> Tuple[List[mixer.Sound]]:
@@ -71,12 +71,12 @@ class Player:
         black_sounds = []
         for i in range(len(self.white_notes)):
             white_sounds.append(
-                mixer.Sound(f"assets\\notes\\{self.white_notes[i]}.wav")
+                mixer.Sound(f"../assets\\notes\\{self.white_notes[i]}.wav")
             )
 
         for i in range(len(self.black_notes)):
             black_sounds.append(
-                mixer.Sound(f"assets\\notes\\{self.black_notes[i]}.wav")
+                mixer.Sound(f"../assets\\notes\\{self.black_notes[i]}.wav")
             )
         return white_sounds, black_sounds
 

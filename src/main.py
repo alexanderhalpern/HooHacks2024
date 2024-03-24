@@ -32,7 +32,7 @@ def main():
     response = requests.get('http://localhost:5000/getSong')
     song = response.json()['song']
     # reformat the response from '/twinkle-3-mid' to '../assets/midi/downloads/twinkle-3.mid'
-    input_song_midi = mido.MidiFile(f"../assets/midi/downloads/{song}.mid")
+    input_song_midi = mido.MidiFile(f"../assets/midi/downloads/{song}")
 
     # start the lesson
     instructor.lesson(input_song_midi)
