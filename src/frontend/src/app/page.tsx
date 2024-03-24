@@ -8,7 +8,8 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentState, setCurrentState] = useState<string>("search");
-  const apiURL = "https://9156-199-111-224-2.ngrok-free.app";
+  // const apiURL = "https://9156-199-111-224-2.ngrok-free.app";
+  const apiURL = "http://localhost:5000";
 
   // demoing recording feedback done
   useEffect(() => {
@@ -27,13 +28,15 @@ export default function Home() {
     const response = await fetch(`${apiURL}/search?query=${userSearch}`);
     const data = await response.json();
     console.log(data);
-    setSearchResults(data.results);
+    setSearchResults(data.results.slice(0, 7));
     setLoading(false);
   };
 
-  const handleSelectSong = async (song_url: string) => {
+  const handleSelectSong = async (song_url: string, song_file_name: string) => {
     setLoading(true);
-    const response = await fetch(`${apiURL}/setSong?song_url=${song_url}`);
+    const response = await fetch(
+      `${apiURL}/setSong?song_url=${song_url}&song_file_name=${song_file_name}`
+    );
     const data = await response.json();
     console.log(data);
     setLoading(false);
@@ -47,7 +50,6 @@ export default function Home() {
     setLoading(false);
   };
 
-  
   // return <div className="text-white">{currentState}</div>;
   if (currentState === "search") {
     return (
@@ -79,7 +81,7 @@ export default function Home() {
               key={result}
               className="mt-4 p-2 text-black bg-gray-100 rounded"
               onClick={() => {
-                handleSelectSong(result[1]);
+                handleSelectSong(result[1], result[0]);
               }}
             >
               {result[0]}

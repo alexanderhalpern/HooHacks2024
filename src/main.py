@@ -10,14 +10,14 @@ import json
 
 def main():
 
-    # # wait until the server is ready
-    # while True:
-    #     response = requests.get('http://localhost:5000/getState')
+    # wait until the server is ready
+    while True:
+        response = requests.get('http://localhost:5000/getState')
 
-    #     hi = response.json()
-    #     if response.json()['state'] == "teach":
-    #         break
-    #     time.sleep(1)
+        hi = response.json()
+        if response.json()['state'] == "teach":
+            break
+        time.sleep(1)
 
     # create the player
     player = Player()
@@ -29,14 +29,10 @@ def main():
     instructor = Instructor(player, analyzer)
 
     # get the song from the server
-    # response = requests.get('http://localhost:5000/getSong')
-    # song = response.json()['song']
+    response = requests.get('http://localhost:5000/getSong')
+    song = response.json()['song']
     # reformat the response from '/twinkle-3-mid' to '../assets/midi/downloads/twinkle-3.mid'
-    # input_song_midi = mido.MidiFile(f"../assets/midi/downloads/{song}.mid")
-    input_song_midi = mido.MidiFile(f"assets/midi/twinkle-twinkle-bad.mid")
-
-    # print(input_song_midi)
-    # quit()
+    input_song_midi = mido.MidiFile(f"../assets/midi/downloads/{song}")
 
     # start the lesson
     instructor.lesson(input_song_midi)

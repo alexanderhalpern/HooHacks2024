@@ -162,8 +162,8 @@ def quantize_midi(mid, step_size=0.5):
 
 
 # Example usage
-reference_file = "assets/midi/twinkle-twinkle-little-star.mid"
-user_file = "assets/midi/twinkle-twinkle-bad.mid"
+reference_file = "../assets/midi/twinkle-twinkle-little-star.mid"
+user_file = "../assets/midi/twinkle-twinkle-bad.mid"
 result = midi_compare(reference_file, user_file)
 
 # save the result to a file with indent

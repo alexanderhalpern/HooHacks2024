@@ -20,7 +20,7 @@ CORS(app)
 if not os.path.exists('state.json'):
     with open('state.json', 'w') as f:
         json.dump({"state": "search", "feedback": "", "song": ""}, f)
-#else:
+# else:
 #    with open('state.json', "r") as f:
 #        file = json.load(f)
 #    file['state'] = "search"
@@ -47,6 +47,7 @@ async def teach():
     # end the lesson
     return jsonify({"message": "No song configured."})
 
+
 @app.route('/setState', methods=['GET'])
 def setState():
     print("HSDFSDFSDF")
@@ -62,6 +63,7 @@ def setState():
 
     return jsonify({"message": "State set."})
 
+
 @app.route('/setFeedback', methods=['GET'])
 def setFeedback():
     feedback = request.args.get('feedback')
@@ -75,12 +77,14 @@ def setFeedback():
 
     return jsonify({"message": "Feedback set."})
 
+
 @app.route('/getFeedback', methods=['GET'])
 def getFeedback():
     if os.path.exists('state.json'):
         with open('state.json') as f:
             feedback = json.load(f)
     return jsonify({"feedback": feedback})
+
 
 @app.route('/getState', methods=['GET'])
 def getState():
@@ -89,26 +93,30 @@ def getState():
             state = json.load(f)['state']
     return jsonify({"state": state})
 
+
 @app.route('/search', methods=['GET'])
 def search():
     search_query = request.args.get('query')
     results_array = get_search_results(search_query)
     return jsonify({"results": results_array})
 
+
 @app.route('/setSong', methods=['GET'])
 def setSong():
     song_url = request.args.get('song_url')
+    song_file_name = request.args.get('song_file_name')
     print(song_url)
     song = SongFinder()
     song._download_midi(song_url)
     with open('state.json', 'r') as f:
         file = json.load(f)
-    file['song'] = song_url[1:]
+    file['song'] = song_file_name
     file['state'] = "song_set"
 
     with open('state.json', 'w') as f:
         json.dump(file, f)
     return jsonify({"message": "Song set."})
+
 
 @app.route('/getSong', methods=['GET'])
 def getSong():
@@ -117,8 +125,8 @@ def getSong():
             song = json.load(f)['song']
     return jsonify({"song": song})
 
+
 if __name__ == '__main__':
     app.run(debug=True)
 
     print('lihoih')
-
