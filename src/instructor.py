@@ -8,7 +8,7 @@ import requests
 
 class Instructor:
 
-    time_per_segment = 5
+    time_per_segment = 10
 
     def __init__(self, player: Player, analyzer: Analyzer) -> None:
         """
@@ -60,11 +60,11 @@ class Instructor:
             # requests.get('http://localhost:5000/setState?state=feedback')
 
             # *analyze* their mistakes
-            is_sufficient, mistakes = self.analyzer.judge_attempt(
-                reference_midi=reference_snippets[current_snippet_idx],
-                user_midi=student_attempt,
-            )
-
+            # is_sufficient, mistakes = self.analyzer.judge_attempt(
+            #     reference_midi=reference_snippets[current_snippet_idx],
+            #     user_midi=student_attempt,
+            # )
+            is_sufficient, mistakes = True, []
             print(is_sufficient, mistakes)
 
             if not is_sufficient:
@@ -118,10 +118,10 @@ class Instructor:
         """
 
         # if one mistake involves more notes than the others, return it
-        counts = sorted([len(mistake["errors"])
-                        for mistake in mistake_timeline], reverse=True)
-        if counts[0] > counts[1]:
-            return mistake_timeline[counts.index(counts[0])]
+        # counts = sorted([mistake["errors"]
+        #                for mistake in mistake_timeline], reverse=True)
+        # if counts[0] > counts[1]:
+        return mistake_timeline[0]
 
         # mistake type priority: "wrong_notes" > "missing_notes" > "extra_notes" > "early_timing" == "late_timing"
         # if multiple mistakes have the same number of notes, return the one with the highest priority
@@ -186,6 +186,8 @@ class Instructor:
 
         ticks_per_second = input_midi.ticks_per_beat * (1_000_000 / tempo)
         ticks_per_segment = ticks_per_second * self.time_per_segment
+
+        print("ticks_per_segment", ticks_per_segment)
 
         snippets = []
         current_ticks = 0

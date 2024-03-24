@@ -21,7 +21,7 @@ class Analyzer:
         match self.judgement_level:
             case "beginner":
                 # beginners are not allowed to play incorrect notes or have severe timing issues
-                if len(errors["incorrect_pitches"]) > 0:
+                if len(errors["incorrect_pitches"]) + len(errors["missing_notes"]) + len(errors["extra_notes"]) > 0:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:

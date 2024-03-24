@@ -153,11 +153,13 @@ class Player:
             current_notes += off_notes_added
             print(f"Current notes: {current_notes}/{total_notes}")
 
+        time.sleep(self.end_sleep_time)
+        self.active_whites = []
+        self.active_blacks = []
         self.midi_input.close()
         pygame.midi.quit()
         pygame.quit()
 
-        time.sleep(self.end_sleep_time)
         midi_file.save('newoutput.mid')
 
         return midi_file
