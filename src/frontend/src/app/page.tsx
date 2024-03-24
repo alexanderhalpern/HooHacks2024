@@ -9,6 +9,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [currentState, setCurrentState] = useState<string>("search");
   const [availableSongs, setAvailableSongs] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<string>("");
   // const apiURL = "https://9156-199-111-224-2.ngrok-free.app";
   const apiURL = "http://localhost:5000";
 
@@ -23,6 +24,16 @@ export default function Home() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (currentState === "feedback") {
+      axios.get(`${apiURL}/getFeedback`).then((response: any) => {
+        console.log(response.data.feedback);
+        speakText(response.data.feedback);
+        setFeedback(response.data.feedback);
+      });
+    }
+  }, [currentState]);
 
   useEffect(() => {
     console.log("here");
@@ -68,6 +79,31 @@ export default function Home() {
     setLoading(false);
   };
 
+  const speakText = (text: string) => {
+    console.log("availableVoices", speechSynthesis.getVoices());
+
+    // Create a new SpeechSynthesisUtterance instance
+    var msg = new SpeechSynthesisUtterance(text);
+
+    // Get the list of available voices
+    let voices = window.speechSynthesis.getVoices();
+
+    // Find the Google US English voice in the list
+    let googleUSEnglishVoice = voices.find(
+      (voice) => voice.name === "Google UK English Male"
+    );
+
+    // Set the voice if found
+    if (googleUSEnglishVoice) {
+      msg.voice = googleUSEnglishVoice;
+    } else {
+      console.warn("Google US English voice not found, using default voice.");
+    }
+
+    // Speak the text
+    window.speechSynthesis.speak(msg);
+  };
+
   // return <div className="text-white">{currentState}</div>;
   if (currentState === "search") {
     return (
@@ -86,6 +122,9 @@ export default function Home() {
               }
             }}
           />
+
+          {/* <button onClick={speakText}>Speak</button> */}
+
           <h2 className="mt-4 text-lg">Available Songs</h2>
           {searchResults.length == 0 &&
             availableSongs.map((song) => (
@@ -140,20 +179,29 @@ export default function Home() {
     );
   }
 
-  if (currentState === "instructor") {
+  if (currentState === "demoing") {
+    speakText("Repeat After Me");
     return (
       <div
-        onClick={() => setCurrentState("player")}
-        className="flex h-screen max-h-screen flex-col items-center justify-center text-3xl p-24 text-white"
+        // onClick={() => setCurrentState("player")}
+        className="flex h-screen max-h-screen flex-col items-center justify-center text-3xl p-24"
       >
         Repeat After Me 🎹 😃
       </div>
     );
   }
-  if (currentState === "player") {
+  if (currentState === "recording") {
     return (
-      <div className="flex h-screen max-h-screen flex-col items-center justify-center text-3xl p-24 text-white">
+      <div className="flex h-screen max-h-screen flex-col items-center justify-center text-3xl p-24">
         Now You Try! 🎹 😃
+      </div>
+    );
+  }
+  if (currentState === "feedback") {
+    return (
+      <div className="flex h-screen max-h-screen flex-col items-center justify-center text-3xl p-24">
+        <div>Feedback</div>
+        <div>{feedback}</div>
       </div>
     );
   }

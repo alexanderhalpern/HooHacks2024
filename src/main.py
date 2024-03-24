@@ -10,6 +10,8 @@ import json
 
 def main():
 
+    requests.get('http://localhost:5000/setState?state=search')
+
     # wait until the server is ready
     while True:
         response = requests.get('http://localhost:5000/getState')
@@ -31,6 +33,7 @@ def main():
     # get the song from the server
     response = requests.get('http://localhost:5000/getSong')
     song = response.json()['song']
+    song = "Twinkle-Twinkle-Little-Star-Demo.mid"
     # reformat the response from '/twinkle-3-mid' to '../assets/midi/downloads/twinkle-3.mid'
     input_song_midi = mido.MidiFile(f"../assets/midi/downloads/{song}")
 

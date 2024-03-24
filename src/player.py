@@ -29,13 +29,14 @@ class Player:
         self.active_blacks = []
 
     def _ask_midi_device(self) -> pygame.midi.Input:
-        num_devices = pygame.midi.get_count()
-        print("Available MIDI devices:")
-        for i in range(num_devices):
-            info = pygame.midi.get_device_info(i)
-            device_type = "Input" if info[2] == 1 else "Output"
-            print(f"Device ID {i}: {info[1].decode()} ({device_type})")
-        device_id = int(input("Enter the Device ID to use: "))
+        # num_devices = pygame.midi.get_count()
+        # print("Available MIDI devices:")
+        # for i in range(num_devices):
+        #     info = pygame.midi.get_device_info(i)
+        #     device_type = "Input" if info[2] == 1 else "Output"
+        #     print(f"Device ID {i}: {info[1].decode()} ({device_type})")
+        # device_id = int(input("Enter the Device ID to use: "))
+        device_id = 1
         return pygame.midi.Input(device_id)
 
     def _init_fonts(self) -> Tuple[pygame.font.Font]:
@@ -113,10 +114,13 @@ class Player:
 
         self.active_whites = []
         self.active_blacks = []
-        pygame.quit()
+        pygame.display.quit()
 
     def record_attempt(self, reference: mido.MidiFile) -> mido.MidiFile:
         self.timer, self.screen = self._init_pygame()
+
+        start_time = time.time()
+        self.midi_input.read(10)
 
         # Extract tempo (microseconds per beat) from reference MIDI file
         tempo = 500000  # default MIDI tempo (120 BPM)
@@ -165,9 +169,9 @@ class Player:
         time.sleep(self.end_sleep_time)
         self.active_whites = []
         self.active_blacks = []
-        self.midi_input.close()
-        pygame.midi.quit()
-        pygame.quit()
+        # self.midi_input.close()
+        # pygame.midi.quit()
+        pygame.display.quit()
 
         midi_file.save('newoutput.mid')
 

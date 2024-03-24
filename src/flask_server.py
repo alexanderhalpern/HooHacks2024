@@ -8,11 +8,13 @@ from analyzer import Analyzer
 import mido
 import os
 import json
+from openai import OpenAI
+from dotenv import load_dotenv
+load_dotenv()
 
-# when the server start read from json called state.json
-# do it with os
-
-
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 app = Flask(__name__)
 CORS(app)
 
@@ -68,9 +70,22 @@ def setState():
 def setFeedback():
     feedback = request.args.get('feedback')
     # write to json called state.json
+    print(feedback)
+    # load gpt 3.0 model
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Act as though you are a piano teacher providing feedback to a student. Rephase the text given to you in order to provide constructive feedback. Do not provide anything but what you would say to a student in your response."},
+            {"role": "user", "content": feedback}
+        ]
+    )
+    print(response)
+    feedback = response.choices[0].message.content
+    print(feedback)
     with open('state.json', 'r') as f:
         file = json.load(f)
         file['feedback'] = feedback
+        file['state'] = "feedback"
 
     with open('state.json', 'w') as f:
         json.dump(file, f)
@@ -82,7 +97,7 @@ def setFeedback():
 def getFeedback():
     if os.path.exists('state.json'):
         with open('state.json') as f:
-            feedback = json.load(f)
+            feedback = json.load(f)["feedback"]
     return jsonify({"feedback": feedback})
 
 

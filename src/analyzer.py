@@ -49,7 +49,7 @@ class Analyzer:
         grouped_errors = {}
         for key in errors:
             for error in errors[key]:
-                time = self.round(error["time"], 5000)
+                time = self.round(error["time"], 1000)
                 if time in grouped_errors:
                     grouped_errors[time]["errors"].append((key, error))
                     if key in grouped_errors[time]["types"]:
