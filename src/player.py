@@ -127,7 +127,7 @@ class Player:
         current_notes = 0
 
         run = True
-        while run and (current_notes <= total_notes):
+        while run and (current_notes < total_notes):
             self.timer.tick(self.fps)
             self._draw_piano()
             pygame.display.flip()
@@ -148,16 +148,16 @@ class Player:
             event_delta_time_ticks = int(
                 (event_delta_time_seconds * 1000000) / (tempo / midi_file.ticks_per_beat))
 
-            on_notes_added = self._process_midi_events(
+            off_notes_added = self._process_midi_events(
                 midi_events, event_delta_time_ticks, track)
-            current_notes += on_notes_added
+            current_notes += off_notes_added
+            print(f"Current notes: {current_notes}/{total_notes}")
 
         self.midi_input.close()
         pygame.midi.quit()
         pygame.quit()
 
         time.sleep(self.end_sleep_time)
-
         midi_file.save('newoutput.mid')
 
         return midi_file
@@ -221,7 +221,7 @@ class Player:
 
     def _process_midi_events(self, midi_events, event_delta_time_ticks, track) -> int:
         """Processes midi_events and returns number of new notes"""
-        on_notes_added = 0
+        off_notes_added = 0
 
         for event in midi_events:
             status, note, velocity, _ = event[0]
@@ -229,7 +229,7 @@ class Player:
             note_name = self.piano_notes[note - self.keyboard_offset]
 
             if velocity > 0:
-                on_notes_added += 1
+
                 track.append(
                     mido.Message(
                         "note_on", note=note, velocity=velocity, time=event_delta_time_ticks
@@ -245,6 +245,7 @@ class Player:
                     self.active_whites.append(white_index)
 
             elif status == 128 or velocity == 0:
+                off_notes_added += 1
                 print("note off")
                 track.append(
                     mido.Message(
@@ -261,12 +262,12 @@ class Player:
                     white_index = self.white_notes.index(note_name)
                     self.active_whites.remove(white_index)
 
-        return on_notes_added
+        return off_notes_added
 
     def _count_notes_in_midi_file(self, midi_file: mido.MidiFile) -> int:
         note_count = 0
         for track in midi_file.tracks:
             for msg in track:
-                if msg.type == 'note_on' and msg.velocity > 0:
+                if msg.type == 'note_off':
                     note_count += 1
         return note_count

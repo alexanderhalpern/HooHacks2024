@@ -4,13 +4,14 @@ import numpy as np
 
 from libs.pymidifile import reformat_midi, mid_to_matrix, matrix_to_mid, quantize_matrix
 
+
 class Analyzer:
     def __init__(self, judgement_level="beginner"):
         self.judgement_level = judgement_level
         pass
 
-
     # is user input good enough
+
     def judge_attempt(self, reference_midi, user_midi):
 
         # compare the files
@@ -24,7 +25,8 @@ class Analyzer:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:
-                        if abs(issue["reference_time"] - issue["time"]) > 100: # TODO: find a good threshold
+                        # TODO: find a good threshold
+                        if abs(issue["reference_time"] - issue["time"]) > 100:
                             sufficient = False
                             break
 
@@ -33,21 +35,23 @@ class Analyzer:
 
         return sufficient, self.error_timeline(errors)
 
-
     # create a timeline of what mistake(s) were made when
+
     def error_timeline(self, errors):
 
         grouped_errors = {}
         for key in errors:
             for error in errors[key]:
                 if error["time"] in grouped_errors:
-                    grouped_errors[error["time"]]["errors"].append((key, error))
+                    grouped_errors[error["time"]
+                                   ]["errors"].append((key, error))
                     if key in grouped_errors[error["time"]]["types"]:
                         grouped_errors[error["time"]]["types"][key] += 1
                     else:
                         grouped_errors[error["time"]]["types"][key] = 1
                 else:
-                    grouped_errors[error["time"]] = {"errors": [(key, error)], "types": {key: 1}}
+                    grouped_errors[error["time"]] = {
+                        "errors": [(key, error)], "types": {key: 1}}
 
         # classify each event as "wrong_notes", "early_timing", "late_timing", "missing_notes", "extra_notes"
         for time in grouped_errors:
@@ -70,10 +74,11 @@ class Analyzer:
 
         return grouped_errors
 
-
-
     # find all the mistakes
+
     def midi_compare(self, reference_file, user_file):
+        print("reference_file", reference_file)
+        print("user_file", user_file)
         reference_midi = self.quantize_midi(reference_file)
         user_midi = self.quantize_midi(user_file)
 
@@ -110,7 +115,8 @@ class Analyzer:
                 elif ref_notes[i - 1][0] == user_notes[j - 1][0]:
                     dp[i][j] = dp[i - 1][j - 1]
                 else:
-                    dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+                    dp[i][j] = 1 + min(dp[i - 1][j], dp[i]
+                                       [j - 1], dp[i - 1][j - 1])
 
         # Traceback to find alignment and report errors
         i = len(ref_notes)
@@ -122,7 +128,8 @@ class Analyzer:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
 
                 # check for timing issues (notes are played too far from the reference)
-                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0: # TODO: find a good threshold
+                # TODO: find a good threshold
+                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0:
 
                     # if, in the reference, there are two notes of the same pitch played in a row
                     if i > 1 and ref_notes[i - 1][0] == ref_notes[i - 2][0]:
@@ -173,7 +180,8 @@ class Analyzer:
                 for j in range(1, len(incorrect_pitches)):
                     other_pitch = incorrect_pitches[j]
                     if other_pitch["time"] == pitch["time"] and other_pitch["reference_pitch"] is not None:
-                        also_played.append((other_pitch, abs(other_pitch["reference_pitch"] - pitch["user_pitch"])))
+                        also_played.append(
+                            (other_pitch, abs(other_pitch["reference_pitch"] - pitch["user_pitch"])))
 
                 # if the user played a different pitch at the same time
                 if len(also_played) > 0:
@@ -188,7 +196,6 @@ class Analyzer:
                     # remove the closest pitch from the list
                     incorrect_pitches.remove(closest_pitch[0])
                     incorrect_pitches.pop(0)
-
 
                 # if we didn't find a matching pitch, then the user played an extra note
                 else:
@@ -206,7 +213,8 @@ class Analyzer:
                 for j in range(1, len(incorrect_pitches)):
                     other_pitch = incorrect_pitches[j]
                     if other_pitch["time"] == pitch["time"] and other_pitch["user_pitch"] is not None:
-                        also_played.append((other_pitch, abs(other_pitch["user_pitch"] - pitch["reference_pitch"])))
+                        also_played.append(
+                            (other_pitch, abs(other_pitch["user_pitch"] - pitch["reference_pitch"])))
 
                 # if the user played a different pitch at the same time
                 if len(also_played) > 0:
@@ -254,10 +262,13 @@ class Analyzer:
         return reformat_midi(mid, verbose=False, write_to_file=False, override_time_info=True)
 
     def quantize_midi(self, mid, step_size=0.5):
-        reformatted = reformat_midi(mid, verbose=False, write_to_file=False, override_time_info=True)
+        reformatted = reformat_midi(
+            mid, verbose=False, write_to_file=False, override_time_info=True)
         matrix = mid_to_matrix(reformatted)
-        quantizer = quantize_matrix(matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
+        quantizer = quantize_matrix(
+            matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
         return matrix_to_mid(quantizer)
+
 
 if __name__ == '__main__':
     # Example usage

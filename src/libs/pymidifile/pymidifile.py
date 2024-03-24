@@ -1,4 +1,4 @@
- #!/usr/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 """
@@ -46,7 +46,7 @@ def parse_mid(mid):
         return mid
 
     else:
-        raise(IOError("Not valid midi file or path."))
+        raise (IOError("Not valid midi file or path."))
 
 
 def dur_in_bars(mid):
@@ -106,6 +106,7 @@ def mid_to_matrix(mid, output='nested_list'):  # {"nested_list", "pandas"}
             noteoffs.append(msg.note)
             durations.append(offset)
 
+    print("Note On", len(noteons), "Note Off", len(noteoffs))
     if not len(noteons) == len(noteoffs):
         print("Unmatcghing size. Reformat file first")
         return None
@@ -113,7 +114,8 @@ def mid_to_matrix(mid, output='nested_list'):  # {"nested_list", "pandas"}
     else:
         mnotes = []
         for i in range(len(noteons)):
-            mnotes.append([noteons[i], offsets[i], durations[noteoffs.index(noteons[i])] - offsets[i]])
+            mnotes.append(
+                [noteons[i], offsets[i], durations[noteoffs.index(noteons[i])] - offsets[i]])
             durations.pop(noteoffs.index(noteons[i]))
             noteoffs.remove(noteons[i])
 
@@ -209,7 +211,6 @@ def onset_vector(matrix, stepsize=0.25, n_beats=None, fold=False):
     return vector
 
 
-
 def dur_matrix(matrix, stepsize=0.25, n_beats=None, fold=False):
     onsets = []
     for event in matrix:
@@ -276,9 +277,11 @@ def matrix_to_mid(matrix, output_file=None, ticks_per_beat=96, vel=100):
     mid.tracks.append(track)
 
     if output_file is not None:
-        track.append(MetaMessage("track_name", name=os.path.split(output_file)[1], time=int(0)))
+        track.append(MetaMessage(
+            "track_name", name=os.path.split(output_file)[1], time=int(0)))
         track.append(MetaMessage("set_tempo", tempo=480000, time=int(0)))
-        track.append(MetaMessage("time_signature", numerator=4, denominator=4, time=int(0)))
+        track.append(MetaMessage("time_signature",
+                     numerator=4, denominator=4, time=int(0)))
 
     sort_events = []
     for row in matrix:
@@ -290,10 +293,12 @@ def matrix_to_mid(matrix, output_file=None, ticks_per_beat=96, vel=100):
     lapso = 0
     for evt in sort_events:
         if evt[1] == 1:
-            track.append(Message('note_on', note=evt[0], velocity=vel, time=int((evt[2] - lapso) * ticks_per_beat)))
+            track.append(Message('note_on', note=evt[0], velocity=vel, time=int(
+                (evt[2] - lapso) * ticks_per_beat)))
             lapso = evt[2]
         elif evt[1] == 0:
-            track.append(Message('note_off', note=evt[0], velocity=0, time=int((evt[2] - lapso) * ticks_per_beat)))
+            track.append(Message('note_off', note=evt[0], velocity=0, time=int(
+                (evt[2] - lapso) * ticks_per_beat)))
             lapso = evt[2]
 
     if output_file is not None:
@@ -364,7 +369,8 @@ def get_pc_duration(my_stream):
             entry = {n.pitch.pitchClass: n.quarterLength}
             pc_durs.update(entry)
         else:
-            pc_durs[n.pitch.pitchClass] = pc_durs[n.pitch.pitchClass] + n.quarterLength
+            pc_durs[n.pitch.pitchClass] = pc_durs[n.pitch.pitchClass] + \
+                n.quarterLength
     return pc_durs
 
 
@@ -414,7 +420,8 @@ def duration_to_bars(stream, remove_tempo=True):
     new_dur = math.ceil(stream[0].highestTime / 4) * 4
 
     if stream.highestTime % 4 != 0:
-        stream[0].append(m21.note.Rest(quarterLength=new_dur - stream.highestTime))
+        stream[0].append(m21.note.Rest(
+            quarterLength=new_dur - stream.highestTime))
     stream.quarterLength = new_dur
     stream.makeNotation(inPlace=True)
     return stream
@@ -518,7 +525,8 @@ def move_rows(df, destination):
     with open(os.path.join(destination, 'original_files.txt'), 'w') as f:
         f.writelines(rows + '\n')
     for i in range(len(rows)):
-        os.rename(rows[i], os.path.join(destination, os.path.split(rows[i])[1]))
+        os.rename(rows[i], os.path.join(
+            destination, os.path.split(rows[i])[1]))
 
 
 # File management and OS related functions
@@ -534,9 +542,9 @@ def index_files(my_dir):
     for each_file in dir_files:
         if os.path.splitext(each_file)[1] == '.mid':
             int_name = "{:03d}.mid".format(file_count)
-            os.rename(os.path.join(my_dir, each_file), os.path.join(my_dir, int_name))
+            os.rename(os.path.join(my_dir, each_file),
+                      os.path.join(my_dir, int_name))
             file_count += 1
-
 
 
 def folderfiles(folderpath, ext=None, recursive=False):
@@ -549,13 +557,14 @@ def folderfiles(folderpath, ext=None, recursive=False):
             rlist = []
             for root, subdirs, files in os.walk(path):
                 for file in files:
-                        rlist.append(os.path.join(root, file))
+                    rlist.append(os.path.join(root, file))
             return rlist
 
         list_of_files = _rlistdir(folderpath)
 
     else:
-        list_of_files = [os.path.join(folderpath, item) for item in os.listdir(folderpath)]
+        list_of_files = [os.path.join(folderpath, item)
+                         for item in os.listdir(folderpath)]
 
     my_files = []
     for myFile in list_of_files:
@@ -567,7 +576,8 @@ def folderfiles(folderpath, ext=None, recursive=False):
             pass
 
     if not my_files:
-        raise FileNotFoundError("Did not find any file with the given extension.")
+        raise FileNotFoundError(
+            "Did not find any file with the given extension.")
     else:
         return my_files
 
