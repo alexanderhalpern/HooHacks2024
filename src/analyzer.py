@@ -31,15 +31,19 @@ class Analyzer:
             case "intermediate":
                 pass
 
-        return sufficient, errors
+        return sufficient, self.error_timeline(errors)
 
 
     # create a timeline of what mistake(s) were made when
     def error_timeline(self, errors):
 
         grouped_errors = {}
+
+        i = 0
         for key in errors:
             for error in errors[key]:
+                error['time'] = i
+                i += 1
                 if error["time"] in grouped_errors:
                     grouped_errors[error["time"]]["errors"].append((key, error))
                     if key in grouped_errors[error["time"]]["types"]:
