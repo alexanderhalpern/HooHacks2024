@@ -33,7 +33,7 @@ class Analyzer:
             case "intermediate":
                 pass
 
-        return sufficient, self.error_timeline(errors)
+        return sufficient, errors
 
     # create a timeline of what mistake(s) were made when
 
@@ -126,6 +126,10 @@ class Analyzer:
 
         while i > 0 or j > 0:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
+
+                i -= 1
+                j -= 1
+                continue
 
                 # check for timing issues (notes are played too far from the reference)
                 # TODO: find a good threshold
@@ -239,6 +243,8 @@ class Analyzer:
                     incorrect_pitches.pop(0)
 
         # look through missing/extra notes to see if they were just played at the wrong time
+        return errors
+
         i = 0
         while i < len(errors["missing_notes"]):
             missing_note = errors["missing_notes"][i]
