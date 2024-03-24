@@ -24,7 +24,7 @@ class Analyzer:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:
-                        if abs(issue["reference_time"] - issue["time"]) > 100: # TODO: find a good threshold
+                        if abs(issue["reference_time"] - issue["time"]) > 1000: # TODO: find a good threshold
                             sufficient = False
                             break
 
@@ -40,14 +40,15 @@ class Analyzer:
         grouped_errors = {}
         for key in errors:
             for error in errors[key]:
-                if error["time"] in grouped_errors:
-                    grouped_errors[error["time"]]["errors"].append((key, error))
-                    if key in grouped_errors[error["time"]]["types"]:
-                        grouped_errors[error["time"]]["types"][key] += 1
+                time = self.round(error["time"], 5000)
+                if time in grouped_errors:
+                    grouped_errors[time]["errors"].append((key, error))
+                    if key in grouped_errors[time]["types"]:
+                        grouped_errors[time]["types"][key] += 1
                     else:
-                        grouped_errors[error["time"]]["types"][key] = 1
+                        grouped_errors[time]["types"][key] = 1
                 else:
-                    grouped_errors[error["time"]] = {"errors": [(key, error)], "types": {key: 1}}
+                    grouped_errors[time] = {"errors": [(key, error)], "types": {key: 1}}
 
         # classify each event as "wrong_notes", "early_timing", "late_timing", "missing_notes", "extra_notes"
         for time in grouped_errors:
@@ -90,6 +91,9 @@ class Analyzer:
         ref_track = reference_midi.merged_track
         user_track = user_midi.merged_track
 
+        self.convert_timing_to_absolute(ref_track)
+        self.convert_timing_to_absolute(user_track)
+
         ref_notes = []
         user_notes = []
 
@@ -122,7 +126,7 @@ class Analyzer:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
 
                 # check for timing issues (notes are played too far from the reference)
-                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0: # TODO: find a good threshold
+                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 10: # TODO: find a good threshold
 
                     # if, in the reference, there are two notes of the same pitch played in a row
                     if i > 1 and ref_notes[i - 1][0] == ref_notes[i - 2][0]:
@@ -236,7 +240,7 @@ class Analyzer:
             missing_note = errors["missing_notes"][i]
             for j in range(len(errors["extra_notes"])):
                 extra_note = errors["extra_notes"][j]
-                if abs(missing_note["time"] - extra_note["time"]) < 400 and missing_note["reference_pitch"] == extra_note["user_pitch"]:
+                if abs(missing_note["time"] - extra_note["time"]) < 3000 and missing_note["reference_pitch"] == extra_note["user_pitch"]:
                     errors["timing_issues"].append({
                         "reference_pitch": missing_note["reference_pitch"],
                         "reference_time": missing_note["time"],
@@ -259,11 +263,23 @@ class Analyzer:
         quantizer = quantize_matrix(matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
         return matrix_to_mid(quantizer)
 
+    def convert_timing_to_absolute(self, track):
+        time = 0
+        track[0].time = 0
+        for msg in track[1:]:
+            time += msg.time
+            msg.time = time
+
+        return track
+
+    def round(self, num, step):
+        return round(num / step) * step
+
 if __name__ == '__main__':
     # Example usage
     analyzer = Analyzer()
     reference_file = "../assets/midi/twinkle-twinkle-little-star.mid"
-    user_file = "../assets/midi/twinkle-twinkle-extra-missing-shifted.mid"
+    user_file = "../assets/midi/twinkle-twinkle-early-chord.mid"
     judgement, errors = analyzer.judge_attempt(reference_file, user_file)
 
     # save the result to a file with indent
