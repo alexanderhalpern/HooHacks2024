@@ -118,6 +118,26 @@ def setSong():
     return jsonify({"message": "Song set."})
 
 
+@app.route('/availableSongs', methods=['GET'])
+def availableSongs():
+    # get all the available songs from the assets/midi/downloads folder
+    songs = os.listdir('../assets/midi/downloads')
+    return jsonify({"songs": songs})
+
+
+@app.route('/setLocalSong', methods=['GET'])
+def setLocalSong():
+    song_file_name = request.args.get('song_file_name')
+    with open('state.json', 'r') as f:
+        file = json.load(f)
+    file['song'] = song_file_name
+    file['state'] = "song_set"
+
+    with open('state.json', 'w') as f:
+        json.dump(file, f)
+    return jsonify({"message": "Song set."})
+
+
 @app.route('/getSong', methods=['GET'])
 def getSong():
     if os.path.exists('state.json'):

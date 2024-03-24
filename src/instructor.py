@@ -39,8 +39,8 @@ class Instructor:
         Returns:
             None
         """
-        # reference_snippets = self._get_song_snippets(input_song_midi)
-        reference_snippets = [input_song_midi]
+        reference_snippets = self._get_song_snippets(input_song_midi)
+        # reference_snippets = [input_song_midi]
 
         # loop until done
         current_snippet_idx = 0
@@ -206,7 +206,8 @@ class Instructor:
 
             if i >= min_index or len(current_track) >= notes_per_segment:
                 snippets.append(current_snippet)
-                current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+                current_snippet = MidiFile(
+                    ticks_per_beat=input_midi.ticks_per_beat)
                 current_track = MidiTrack()
                 current_snippet.tracks.append(current_track)
                 current_ticks = 0
@@ -229,6 +230,7 @@ class Instructor:
 
         return snippets
 
+
 def get_song_snippets(input_midi: MidiFile) -> List[MidiFile]:
     """
     Split a song into snippets of notes each of duration `time_per_segment`.
@@ -247,7 +249,6 @@ def get_song_snippets(input_midi: MidiFile) -> List[MidiFile]:
     snippets = []
 
     return snippets"""
-
 
     tempo = 500000  # Default MIDI tempo (500,000 microseconds per beat)
     for track in input_midi.tracks:
@@ -306,13 +307,13 @@ def get_song_snippets(input_midi: MidiFile) -> List[MidiFile]:
 
             if pair[1] >= min_cutoff:
                 snippets.append(current_snippet)
-                current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
+                current_snippet = MidiFile(
+                    ticks_per_beat=input_midi.ticks_per_beat)
                 current_track = MidiTrack()
                 current_snippet.tracks.append(current_track)
                 i = pair[1]
 
     return snippets
-
 
 
 if __name__ == '__main__':

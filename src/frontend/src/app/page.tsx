@@ -8,6 +8,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentState, setCurrentState] = useState<string>("search");
+  const [availableSongs, setAvailableSongs] = useState<string[]>([]);
   // const apiURL = "https://9156-199-111-224-2.ngrok-free.app";
   const apiURL = "http://localhost:5000";
 
@@ -23,6 +24,13 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    console.log("here");
+    axios.get(`${apiURL}/availableSongs`).then((response: any) => {
+      setAvailableSongs(response.data.songs);
+    });
+  }, []);
+
   const handleSearch = async () => {
     setLoading(true);
     const response = await fetch(`${apiURL}/search?query=${userSearch}`);
@@ -36,6 +44,16 @@ export default function Home() {
     setLoading(true);
     const response = await fetch(
       `${apiURL}/setSong?song_url=${song_url}&song_file_name=${song_file_name}`
+    );
+    const data = await response.json();
+    console.log(data);
+    setLoading(false);
+  };
+
+  const handleSelectLocalSong = async (song_file_name: string) => {
+    setLoading(true);
+    const response = await fetch(
+      `${apiURL}/setLocalSong?song_file_name=${song_file_name}`
     );
     const data = await response.json();
     console.log(data);
@@ -68,6 +86,19 @@ export default function Home() {
               }
             }}
           />
+          <h2 className="mt-4 text-lg">Available Songs</h2>
+          {searchResults.length == 0 &&
+            availableSongs.map((song) => (
+              <div
+                key={song}
+                className="mt-4 p-2 text-black bg-gray-100 rounded"
+                onClick={() => {
+                  handleSelectLocalSong(song);
+                }}
+              >
+                {song}
+              </div>
+            ))}
           <button
             className="mt-4 p-2 bg-blue-500 text-white rounded"
             onClick={async () => {
