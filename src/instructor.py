@@ -8,7 +8,7 @@ import requests
 
 class Instructor:
 
-    time_per_segment = 1
+    notes_per_segment = 5
 
     def __init__(self, player: Player, analyzer: Analyzer) -> None:
         """
@@ -37,8 +37,8 @@ class Instructor:
         Returns:
             None
         """
-        # reference_snippets = self._get_song_snippets(input_song_midi)
-        reference_snippets = [input_song_midi]
+        reference_snippets = self._get_song_snippets(input_song_midi)
+        # reference_snippets = [input_song_midi]
 
         # loop until done
         current_snippet_idx = 0
@@ -92,6 +92,7 @@ class Instructor:
             print(
                 "You're almost there! There's just one last thing to fix before we move on:")
             # requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
+            print(advice)
 
         # if the user made multiple mistakes, correct the most severe one
         else:
@@ -171,38 +172,43 @@ class Instructor:
 
     def _get_song_snippets(self, input_midi: MidiFile) -> List[MidiFile]:
         """
-        Split a song into snippets of notes each of duration `time_per_segment`.
+        Split a song into cumulative snippets based on the number of notes.
         """
-        tempo = 500000  # Default MIDI tempo (500,000 microseconds per beat)
-        for track in input_midi.tracks:
-            for msg in track:
-                if msg.type == "set_tempo":
-                    tempo = msg.tempo
-                    break  # find first tempo and break
-
-        ticks_per_second = input_midi.ticks_per_beat * (1_000_000 / tempo)
-        ticks_per_segment = ticks_per_second * self.time_per_segment
-
         snippets = []
-        current_ticks = 0
+        note_count = 0
         current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
         current_track = MidiTrack()
         current_snippet.tracks.append(current_track)
 
+        notes_on = 0
+        notes_off = 0
+
         for track in input_midi.tracks:
             for msg in track:
-                if current_ticks + msg.time > ticks_per_segment:
-                    if len(current_track) > 0:
+                # Copy the message to the current track
+                current_track.append(msg.copy())
+                # Count note on/off events
+                print(msg)
+                if msg.type == 'note_on':
+                    notes_on += 1
+                if msg.type == 'note_off':
+                    notes_off += 1
+                print(notes_on, notes_off)
+                if msg.type == 'note_off' and notes_on == notes_off:
+                    note_count += 1
+                    # When the note count hits the threshold, save the snippet and reset the count
+                    if note_count >= self.notes_per_segment:
                         snippets.append(current_snippet)
-                    current_snippet = MidiFile(
-                        ticks_per_beat=input_midi.ticks_per_beat)
-                    current_track = MidiTrack()
-                    current_snippet.tracks.append(current_track)
-                    current_ticks = 0
+                        current_snippet = MidiFile(
+                            ticks_per_beat=input_midi.ticks_per_beat)
+                        current_track = MidiTrack()
+                        current_snippet.tracks.append(current_track)
+                        note_count = 0
+                        # Copy all messages from the beginning up to this point
+                        for previous_msg in track[:track.index(msg) + 1]:
+                            current_track.append(previous_msg.copy())
 
-                current_ticks += msg.time
-                current_track.append(msg)
-
+        # Add the last snippet if it contains any messages
         if len(current_track) > 0:
             snippets.append(current_snippet)
 

@@ -182,7 +182,7 @@ class Analyzer:
                 also_played = []
                 for j in range(1, len(incorrect_pitches)):
                     other_pitch = incorrect_pitches[j]
-                    if other_pitch["time"] == pitch["time"] and other_pitch["reference_pitch"] is not None:
+                    if abs(other_pitch["time"] - pitch["time"]) < 1000 and other_pitch["reference_pitch"] is not None:
                         also_played.append(
                             (other_pitch, abs(other_pitch["reference_pitch"] - pitch["user_pitch"])))
 
@@ -215,7 +215,7 @@ class Analyzer:
                 also_played = []
                 for j in range(1, len(incorrect_pitches)):
                     other_pitch = incorrect_pitches[j]
-                    if other_pitch["time"] == pitch["time"] and other_pitch["user_pitch"] is not None:
+                    if abs(other_pitch["time"] - pitch["time"]) < 1000 and other_pitch["user_pitch"] is not None:
                         also_played.append(
                             (other_pitch, abs(other_pitch["user_pitch"] - pitch["reference_pitch"])))
 
