@@ -8,7 +8,7 @@ import requests
 
 class Instructor:
 
-    notes_per_segment = 5
+    time_per_segment = 1
 
     def __init__(self, player: Player, analyzer: Analyzer) -> None:
         """
@@ -37,26 +37,26 @@ class Instructor:
         Returns:
             None
         """
-        reference_snippets = self._get_song_snippets(input_song_midi)
-        # reference_snippets = [input_song_midi]
+        # reference_snippets = self._get_song_snippets(input_song_midi)
+        reference_snippets = [input_song_midi]
 
         # loop until done
         current_snippet_idx = 0
         while len(reference_snippets) > 0 and current_snippet_idx < len(reference_snippets):
 
-            # requests.get('http://localhost:5000/setState?state=demoing')
+            requests.get('http://localhost:5000/setState?state=demoing')
 
             # *play* the next snippet
             self.player.demo(reference_snippets[current_snippet_idx])
 
-            # requests.get('http://localhost:5000/setState?state=recording')
+            requests.get('http://localhost:5000/setState?state=recording')
 
             # *get* user attempt
             student_attempt = self.player.record_attempt(
                 reference_snippets[current_snippet_idx]
             )
 
-            # requests.get('http://localhost:5000/setState?state=feedback')
+            requests.get('http://localhost:5000/setState?state=feedback')
 
             # *analyze* their mistakes
             is_sufficient, mistakes = self.analyzer.judge_attempt(
@@ -69,7 +69,7 @@ class Instructor:
                 continue
             current_snippet_idx += 1
 
-        # requests.get('http://localhost:5000/setState?state=done')
+        requests.get('http://localhost:5000/setState?state=done')
 
     def _correct_mistakes(self, mistake_timeline: dict) -> None:
         """
@@ -91,8 +91,8 @@ class Instructor:
             # TODO connect to user interface
             print(
                 "You're almost there! There's just one last thing to fix before we move on:")
-            # requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
-            print(advice)
+            requests.get(
+                'http://localhost:5000/setFeedback?feedback=' + advice)
 
         # if the user made multiple mistakes, correct the most severe one
         else:
@@ -101,7 +101,8 @@ class Instructor:
 
             # TODO connect to user interface
             print("Here's one thing you can fix to make your performance even better:")
-            # requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
+            requests.get(
+                'http://localhost:5000/setFeedback?feedback=' + advice)
 
     def _find_worst_mistake(self, mistake_timeline: dict) -> dict:
         """
@@ -172,43 +173,38 @@ class Instructor:
 
     def _get_song_snippets(self, input_midi: MidiFile) -> List[MidiFile]:
         """
-        Split a song into cumulative snippets based on the number of notes.
+        Split a song into snippets of notes each of duration `time_per_segment`.
         """
+        tempo = 500000  # Default MIDI tempo (500,000 microseconds per beat)
+        for track in input_midi.tracks:
+            for msg in track:
+                if msg.type == "set_tempo":
+                    tempo = msg.tempo
+                    break  # find first tempo and break
+
+        ticks_per_second = input_midi.ticks_per_beat * (1_000_000 / tempo)
+        ticks_per_segment = ticks_per_second * self.time_per_segment
+
         snippets = []
-        note_count = 0
+        current_ticks = 0
         current_snippet = MidiFile(ticks_per_beat=input_midi.ticks_per_beat)
         current_track = MidiTrack()
         current_snippet.tracks.append(current_track)
 
-        notes_on = 0
-        notes_off = 0
-
         for track in input_midi.tracks:
             for msg in track:
-                # Copy the message to the current track
-                current_track.append(msg.copy())
-                # Count note on/off events
-                print(msg)
-                if msg.type == 'note_on':
-                    notes_on += 1
-                if msg.type == 'note_off':
-                    notes_off += 1
-                print(notes_on, notes_off)
-                if msg.type == 'note_off' and notes_on == notes_off:
-                    note_count += 1
-                    # When the note count hits the threshold, save the snippet and reset the count
-                    if note_count >= self.notes_per_segment:
+                if current_ticks + msg.time > ticks_per_segment:
+                    if len(current_track) > 0:
                         snippets.append(current_snippet)
-                        current_snippet = MidiFile(
-                            ticks_per_beat=input_midi.ticks_per_beat)
-                        current_track = MidiTrack()
-                        current_snippet.tracks.append(current_track)
-                        note_count = 0
-                        # Copy all messages from the beginning up to this point
-                        for previous_msg in track[:track.index(msg) + 1]:
-                            current_track.append(previous_msg.copy())
+                    current_snippet = MidiFile(
+                        ticks_per_beat=input_midi.ticks_per_beat)
+                    current_track = MidiTrack()
+                    current_snippet.tracks.append(current_track)
+                    current_ticks = 0
 
-        # Add the last snippet if it contains any messages
+                current_ticks += msg.time
+                current_track.append(msg)
+
         if len(current_track) > 0:
             snippets.append(current_snippet)
 
