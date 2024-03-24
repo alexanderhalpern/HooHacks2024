@@ -29,23 +29,22 @@ class Player:
     fps = 60
     WIDTH = 52 * 25  # Set Width of Window
     HEIGHT = 300  # Set Height of Window
-    left_oct = 4
-    right_oct = 5
     piano_notes = pl.piano_notes
     white_notes = pl.white_notes
     black_notes = pl.black_notes
     black_labels = pl.black_labels
-    duration_light_frames = 30
     white_width = 54
     black_width = 34
+    keyboard_offset = 21
+    end_sleep_time = 1
 
     def __init__(self) -> None:
         self.timer, self.screen = self._init_pygame()
         self.midi_input = self._ask_midi_device()
         self.font, self.medium_font, self.small_font, self.real_small_font = self._init_fonts()
         self.white_sounds, self.black_sounds = self._load_note_sounds()
-        self.active_whites = {}
-        self.active_blacks = {}
+        self.active_whites = []
+        self.active_blacks = []
 
     def _ask_midi_device(self) -> pygame.midi.Input:
         num_devices = pygame.midi.get_count()
@@ -92,8 +91,32 @@ class Player:
     def demo(self, midi_file: mido.MidiFile):
         self.timer, self.screen = self._init_pygame()
 
-        # iterates over messages (individual notes)
-        for message in midi_file.play():
+        start_time = time.time()
+        track_iter = iter(midi_file)
+        next_event_time = 0
+        has_messages = True
+
+        try:
+            next_msg = next(track_iter)
+            next_event_time = next_msg.time
+        except StopIteration:
+            next_msg = None
+            has_messages = False
+
+        while has_messages:
+            elapsed_time = time.time() - start_time
+
+            # Check and play the MIDI messages when their time comes
+            while elapsed_time >= next_event_time and next_msg:
+                self._process_midi_message(next_msg)
+
+                try:
+                    next_msg = next(track_iter)
+                    next_event_time += next_msg.time
+                except StopIteration:
+                    next_msg = None
+                    has_messages = False
+
             self.timer.tick(self.fps)
 
             for event in pygame.event.get():
@@ -101,180 +124,179 @@ class Player:
                     pygame.quit()
                     return
 
-            self.draw_piano()
-
-            if message.type != "note_on" and message.type != "note_off":
-                continue
-
-            # Map Midi Indices to Our Keyboard
-            note_name = self.piano_notes[message.note - 21]
-
-            # TODO: Come back to this and understand it please...
-            if note_name in self.white_notes:
-                white_index = self.white_notes.index(note_name)
-                if message.type == "note_on" and message.velocity > 0:
-                    self.white_sounds[white_index].play()
-                    self.active_whites[white_index] = self.duration_light_frames
-                else:
-                    if white_index in self.active_whites.keys():
-                        self.active_whites.pop(white_index)
-            elif note_name in self.black_notes:
-                black_index = self.black_notes.index(note_name)
-                if message.type == "note_on" and message.velocity > 0:
-                    self.black_sounds[black_index].play()
-                    self.active_blacks[black_index] = self.duration_light_frames
-                else:
-                    if black_index in self.active_blacks.keys():
-                        self.active_blacks.pop(black_index)
-
+            self._draw_piano()
             pygame.display.flip()
-            time.sleep(message.time)
 
-        self.active_whites = {}
-        self.active_blacks = {}
+        time.sleep(self.end_sleep_time)
+
+        self.active_whites = []
+        self.active_blacks = []
         pygame.quit()
 
-    def draw_piano(self):
-        # === Whites ===
-        for i in range(36):
-            pygame.draw.rect(self.screen, 'black', [
-                i * self.white_width, self.HEIGHT - 100, self.white_width, self.HEIGHT], 0, 2)
-
-        # Paint over green if active
-        for (key_pos, frames_left) in self.active_whites.items():
-            if frames_left > 0:
-                pygame.draw.rect(self.screen, 'green', [
-                    key_pos * self.white_width, self.HEIGHT - 100, self.white_width, self.HEIGHT], 0, 2)
-                self.active_whites[key_pos] -= 1
-
-        # === Blacks ===
-        black_key_positions = []
-        for i in range(25):
-            if i % 7 not in [2, 6]:  # Skip where there are no black keys
-                black_key_positions.append(i)
-
-        for position in black_key_positions:
-            draw_position = (position + .75) * self.white_width
-            pygame.draw.rect(self.screen, 'black', [
-                draw_position, 0, self.black_width, self.HEIGHT // 1.5], 0, 2)
-
-        # Paint over green if active
-        for (key_pos, duration_left) in self.active_blacks.items():
-            draw_position = (key_pos + .75) * self.white_width
-            if key_pos == key_pos:
-                if duration_left > 0:
-                    pygame.draw.rect(self.screen, 'green', [
-                        draw_position, 0, self.black_width, self.HEIGHT // 1.5], 0, 2)
-                    self.active_blacks[key_pos] -= 1
-
-    def record_attempt(self, reference: mido.MidiFile):
+    def record_attempt(self, reference: mido.MidiFile) -> mido.MidiFile:
         self.timer, self.screen = self._init_pygame()
 
-        midi_file = mido.MidiFile()
+        # Extract tempo (microseconds per beat) from reference MIDI file
+        tempo = 500000  # default MIDI tempo (120 BPM)
+        for track in reference.tracks:
+            for msg in track:
+                if msg.is_meta and msg.type == 'set_tempo':
+                    tempo = msg.tempo
+                    break
+
+        midi_file = mido.MidiFile(ticks_per_beat=reference.ticks_per_beat)
         track = mido.MidiTrack()
         midi_file.tracks.append(track)
 
         start_time = time.time()
-        note_start_times = {}
-        last_event_time = 0
-
-        black_keys = []
-        white_keys = []
+        last_event_time = start_time
+        total_notes = self._count_notes_in_midi_file(reference)
+        current_notes = 0
 
         run = True
-        while run:
-            print(note_start_times)
+        while run and (current_notes < total_notes):
             self.timer.tick(self.fps)
-            self.draw_piano()
-
-            # Check for MIDI events
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    black_key = False
-                    for i in range(len(black_keys)):
-                        if black_keys[i].collidepoint(event.pos):
-                            self.black_sounds[i].play(0, 1000)
-                            black_key = True
-                            self.active_blacks[i] = 30
-                    for i in range(len(white_keys)):
-                        if white_keys[i].collidepoint(event.pos) and not black_key:
-                            self.white_sounds[i].play(0, 3000)
-                            self.active_whites[i] = 30
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RIGHT:
-                        if right_oct < 8:
-                            right_oct += 1
-                    if event.key == pygame.K_LEFT:
-                        if right_oct > 0:
-                            right_oct -= 1
-                    if event.key == pygame.K_UP:
-                        if left_oct < 8:
-                            left_oct += 1
-                    if event.key == pygame.K_DOWN:
-                        if left_oct > 0:
-                            left_oct -= 1
-            if self.midi_input.poll():
-                midi_events = self.midi_input.read(10)
-                current_time = time.time() - start_time
-                # Process MIDI events
-                for event in midi_events:
-                    midi_data = event[0]
-                    status, note, velocity, _ = midi_data
-                    print(status, note, velocity)
-                    event_time = int((current_time - last_event_time) * 1000)
-                    last_event_time = current_time
-
-                    # Map MIDI notes to piano keys here
-                    # This is an example mapping; you'll need to adjust it based on your setup
-                    if velocity > 0:
-                        note_start_times[note] = current_time
-                        track.append(
-                            mido.Message(
-                                "note_on", note=note, velocity=velocity, time=event_time
-                            )
-                        )
-                        note_index = note - 21
-                        note_name = self.piano_notes[note_index]
-                        # piano_notes[note_index].play()
-
-                        if note_name in self.black_notes:
-                            black_index = self.black_notes.index(note_name)
-                            self.black_sounds[black_index].play()
-                            self.active_blacks[black_index] = 30
-                        if note_name in self.white_notes:
-                            white_index = self.white_notes.index(note_name)
-                            self.white_sounds[white_index].play()
-                            self.active_whites[white_index] = 30
-
-                        self.active_whites[note_index] = 30
-                        print(note_name)
-
-                    elif status == 128 or velocity == 0:  # Note off
-                        # Handle note off if necessary
-                        print("end", note_start_times)
-                        if note in note_start_times:
-                            note_duration = current_time - \
-                                note_start_times[note]
-                            track.append(
-                                mido.Message(
-                                    "note_off",
-                                    note=note,
-                                    velocity=velocity,
-                                    time=event_time,
-                                )
-                            )
-                            del note_start_times[note]
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-            midi_file.save("output.mid")
             pygame.display.flip()
+            self._draw_piano()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+
+            if not self.midi_input.poll():
+                continue
+
+            midi_events = self.midi_input.read(10)
+            current_time = time.time()
+            event_delta_time_seconds = current_time - last_event_time
+            last_event_time = current_time
+
+            # Convert the event delta time to MIDI ticks
+            event_delta_time_ticks = int(
+                (event_delta_time_seconds * 1000000) / (tempo / midi_file.ticks_per_beat))
+
+            on_notes_added = self._process_midi_events(
+                midi_events, event_delta_time_ticks, track)
+            current_notes += on_notes_added
+
         self.midi_input.close()
         pygame.midi.quit()
         pygame.quit()
+
+        time.sleep(self.end_sleep_time)
+
+        midi_file.save('newoutput.mid')
+
+        return midi_file
+
+    def _process_midi_message(self, message):
+        if message.type not in ["note_on", "note_off"]:
+            return
+
+        note_name = self.piano_notes[message.note - self.keyboard_offset]
+        # print(note_name)
+
+        if note_name in self.white_notes:
+            white_index = self.white_notes.index(note_name)
+            if message.type == "note_on" and message.velocity > 0:
+                print(f"note white: {message.note}")
+                self.white_sounds[white_index].play()
+                self.active_whites.append(white_index)
+            elif message.type == "note_off":
+                self.active_whites.remove(white_index)
+        elif note_name in self.black_notes:
+            black_index = self.black_notes.index(note_name)
+            if message.type == "note_on" and message.velocity > 0:
+                print(f"note black: {message.note}")
+                self.black_sounds[black_index].play()
+                self.active_blacks.append(black_index)
+            elif message.type == "note_off":
+                self.active_blacks.remove(black_index)
+
+    def _draw_piano(self):
+        # === Whites ===
+        for i in range(36):
+            pygame.draw.rect(self.screen, 'black', [
+                i * self.white_width, 0, self.white_width, self.HEIGHT], 0, 2)
+
+        # Paint over green if active
+        for key_pos in self.active_whites:
+            pygame.draw.rect(self.screen, 'green', [
+                key_pos * self.white_width, 0, self.white_width, self.HEIGHT], 0, 2)
+
+        # === Blacks ===
+        # Pattern of black keys relative to white keys in each octave
+        black_key_offsets = [0, 1, 3, 4, 5]
+        octave_size = 7  # Number of white keys in an octave
+
+        for i, black_note in enumerate(self.black_notes):
+            # Extract the octave number
+            octave = int(black_note[-1])
+
+            # Determine the black key's position within the octave
+            black_key_index_within_octave = black_key_offsets[i % len(
+                black_key_offsets)]
+
+            # Calculate white key index relative to C of the octave and then the black key position
+            draw_position = ((octave - 2) * octave_size + black_key_index_within_octave) * \
+                self.white_width + self.white_width - self.black_width / 2
+
+            # Draw the black key
+            color = 'green' if i in self.active_blacks else 'black'
+            pygame.draw.rect(self.screen, color, [
+                             draw_position, 0, self.black_width, self.HEIGHT // 1.5], 0, 2)
+
+    def _process_midi_events(self, midi_events, event_delta_time_ticks, track) -> int:
+        """Processes midi_events and returns number of new notes"""
+        on_notes_added = 0
+
+        for event in midi_events:
+            status, note, velocity, _ = event[0]
+            print(status, note, velocity)
+            note_name = self.piano_notes[note - self.keyboard_offset]
+
+            if velocity > 0:
+                on_notes_added += 1
+                track.append(
+                    mido.Message(
+                        "note_on", note=note, velocity=velocity, time=event_delta_time_ticks
+                    )
+                )
+                if note_name in self.black_notes:
+                    black_index = self.black_notes.index(note_name)
+                    self.black_sounds[black_index].play()
+                    self.active_blacks.append(black_index)
+                if note_name in self.white_notes:
+                    white_index = self.white_notes.index(note_name)
+                    self.white_sounds[white_index].play()
+                    self.active_whites.append(white_index)
+
+            elif status == 128 or velocity == 0:
+                print("note off")
+                track.append(
+                    mido.Message(
+                        "note_off",
+                        note=note,
+                        velocity=velocity,
+                        time=event_delta_time_ticks,
+                    )
+                )
+                if note_name in self.black_notes:
+                    black_index = self.black_notes.index(note_name)
+                    self.active_blacks.remove(black_index)
+                if note_name in self.white_notes:
+                    white_index = self.white_notes.index(note_name)
+                    self.active_whites.remove(white_index)
+
+        return on_notes_added
+
+    def _count_notes_in_midi_file(self, midi_file: mido.MidiFile) -> int:
+        note_count = 0
+        for track in midi_file.tracks:
+            for msg in track:
+                if msg.type == 'note_on' and msg.velocity > 0:
+                    note_count += 1
+        return note_count
 
 
 # class Player:

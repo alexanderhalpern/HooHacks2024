@@ -7,7 +7,7 @@ from typing import List
 
 class Instructor:
 
-    time_per_segment = 1
+    time_per_segment = 5
 
     def __init__(self, player: Player, analyzer: Analyzer) -> None:
         """
@@ -75,7 +75,8 @@ class Instructor:
             advice = self._describe_mistake(mistake_timeline[0])
 
             # TODO connect to user interface
-            print("You're almost there! There's just one last thing to fix before we move on:")
+            print(
+                "You're almost there! There's just one last thing to fix before we move on:")
             print(advice)
 
         # if the user made multiple mistakes, correct the most severe one
@@ -86,7 +87,6 @@ class Instructor:
             # TODO connect to user interface
             print("Here's one thing you can fix to make your performance even better:")
             print(advice)
-
 
     def _find_worst_mistake(self, mistake_timeline: dict) -> dict:
         """
@@ -100,7 +100,8 @@ class Instructor:
         """
 
         # if one mistake involves more notes than the others, return it
-        counts = sorted([len(mistake["errors"]) for mistake in mistake_timeline], reverse=True)
+        counts = sorted([len(mistake["errors"])
+                        for mistake in mistake_timeline], reverse=True)
         if counts[0] > counts[1]:
             return mistake_timeline[counts.index(counts[0])]
 
@@ -127,7 +128,8 @@ class Instructor:
         match mistake["type"]:
             case "wrong_notes":
                 # if all notes are wrong in the same way, tell the user to transpose
-                delta = mistake["errors"][0]["correct_note"] - mistake["errors"][0]["user_note"]
+                delta = mistake["errors"][0]["correct_note"] - \
+                    mistake["errors"][0]["user_note"]
                 if all([note["correct_note"] - note["user_note"] == delta for note in mistake["errors"]]):
                     return (f"Your notes are all off by {delta} semitones. Try transposing this {'note' if len(mistake['errors']) == 1 else 'chord'}"
                             f" {'up' if delta > 0 else 'down'}"
@@ -152,7 +154,6 @@ class Instructor:
                 return "You played these notes too late. Try playing them again."
             case _:
                 return "There was a mistake here. Try playing this part again."
-
 
     def _get_song_snippets(self, input_midi: MidiFile) -> List[MidiFile]:
         """

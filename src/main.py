@@ -6,8 +6,10 @@ import mido
 
 def main():
     # Load midi file
+    # input_song_midi = mido.MidiFile(
+    #     "assets/midi/chromatic.mid")
     input_song_midi = mido.MidiFile(
-        "assets/midi/twinkle-twinkle-bad.mid")
+        "assets/midi/chromatic.mid")
 
     # create an instructor to teach you the song
     instructor = Instructor(Player(), Analyzer())
