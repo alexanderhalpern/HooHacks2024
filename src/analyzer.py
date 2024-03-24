@@ -1,14 +1,18 @@
 import json
 import mido
 import numpy as np
+from libs.pymidifile import (
+    reformat_midi,
+    mid_to_matrix,
+    matrix_to_mid,
+    quantize_matrix,
+)
 
-from libs.pymidifile import reformat_midi, mid_to_matrix, matrix_to_mid, quantize_matrix
 
 class Analyzer:
     def __init__(self, judgement_level="beginner"):
         self.judgement_level = judgement_level
         pass
-
 
     # is user input good enough
     def judge_attempt(self, reference_midi, user_midi):
@@ -24,7 +28,9 @@ class Analyzer:
                     sufficient = False
                 if len(errors["timing_issues"]) > 1:
                     for issue in errors["timing_issues"]:
-                        if abs(issue["reference_time"] - issue["time"]) > 100: # TODO: find a good threshold
+                        if (
+                            abs(issue["reference_time"] - issue["time"]) > 100
+                        ):  # TODO: find a good threshold
                             sufficient = False
                             break
 
@@ -32,7 +38,6 @@ class Analyzer:
                 pass
 
         return sufficient, self.error_timeline(errors)
-
 
     # create a timeline of what mistake(s) were made when
     def error_timeline(self, errors):
@@ -47,7 +52,10 @@ class Analyzer:
                     else:
                         grouped_errors[error["time"]]["types"][key] = 1
                 else:
-                    grouped_errors[error["time"]] = {"errors": [(key, error)], "types": {key: 1}}
+                    grouped_errors[error["time"]] = {
+                        "errors": [(key, error)],
+                        "types": {key: 1},
+                    }
 
         # classify each event as "wrong_notes", "early_timing", "late_timing", "missing_notes", "extra_notes"
         for time in grouped_errors:
@@ -57,7 +65,10 @@ class Analyzer:
                 error_type = list(grouped_errors[time]["types"].keys())[0]
 
                 if error_type == "timing_issues":
-                    if grouped_errors[time]["errors"][0][1]["reference_time"] > grouped_errors[time]["errors"][0][1]["time"]:
+                    if (
+                        grouped_errors[time]["errors"][0][1]["reference_time"]
+                        > grouped_errors[time]["errors"][0][1]["time"]
+                    ):
                         error_type = "early_timing"
                     else:
                         error_type = "late_timing"
@@ -70,8 +81,6 @@ class Analyzer:
 
         return grouped_errors
 
-
-
     # find all the mistakes
     def midi_compare(self, reference_file, user_file):
         reference_midi = self.quantize_midi(reference_file)
@@ -81,7 +90,7 @@ class Analyzer:
             "incorrect_pitches": [],
             "timing_issues": [],
             "missing_notes": [],
-            "extra_notes": []
+            "extra_notes": [],
         }
 
         ref_ticks = 0
@@ -94,11 +103,11 @@ class Analyzer:
         user_notes = []
 
         for msg in ref_track:
-            if msg.type == 'note_on':
+            if msg.type == "note_on":
                 ref_notes.append((msg.note, msg.time))
 
         for msg in user_track:
-            if msg.type == 'note_on':
+            if msg.type == "note_on":
                 user_notes.append((msg.note, msg.time))
 
         # Dynamic programming to find optimal alignment
@@ -122,7 +131,9 @@ class Analyzer:
             if i > 0 and j > 0 and ref_notes[i - 1][0] == user_notes[j - 1][0]:
 
                 # check for timing issues (notes are played too far from the reference)
-                if abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0: # TODO: find a good threshold
+                if (
+                    abs(ref_notes[i - 1][1] - user_notes[j - 1][1]) > 0
+                ):  # TODO: find a good threshold
 
                     # if, in the reference, there are two notes of the same pitch played in a row
                     if i > 1 and ref_notes[i - 1][0] == ref_notes[i - 2][0]:
@@ -133,11 +144,13 @@ class Analyzer:
                             j -= 1
                             continue
 
-                        errors["timing_issues"].append({
-                            "reference_pitch": ref_notes[i - 1][0],
-                            "reference_time": ref_notes[i - 1][1],
-                            "time": user_notes[j - 1][1]
-                        })
+                        errors["timing_issues"].append(
+                            {
+                                "reference_pitch": ref_notes[i - 1][0],
+                                "reference_time": ref_notes[i - 1][1],
+                                "time": user_notes[j - 1][1],
+                            }
+                        )
 
                 # No error, move to previous notes
                 i -= 1
@@ -146,18 +159,22 @@ class Analyzer:
 
                 # Check for missing or extra notes
                 if i > 0 and (j == 0 or dp[i][j - 1] >= dp[i - 1][j]):
-                    incorrect_pitches.append({
-                        "reference_pitch": ref_notes[i - 1][0],
-                        "user_pitch": None,
-                        "time": sum([msg[1] for msg in ref_notes[:i]])
-                    })
+                    incorrect_pitches.append(
+                        {
+                            "reference_pitch": ref_notes[i - 1][0],
+                            "user_pitch": None,
+                            "time": sum([msg[1] for msg in ref_notes[:i]]),
+                        }
+                    )
                     i -= 1
                 elif j > 0 and (i == 0 or dp[i][j - 1] < dp[i - 1][j]):
-                    incorrect_pitches.append({
-                        "reference_pitch": None,
-                        "user_pitch": user_notes[j - 1][0],
-                        "time": sum([msg[1] for msg in user_notes[:j]])
-                    })
+                    incorrect_pitches.append(
+                        {
+                            "reference_pitch": None,
+                            "user_pitch": user_notes[j - 1][0],
+                            "time": sum([msg[1] for msg in user_notes[:j]]),
+                        }
+                    )
                     j -= 1
 
         # now that we have the incorrect pitches, we can figure out the type of error
@@ -172,30 +189,40 @@ class Analyzer:
                 also_played = []
                 for j in range(1, len(incorrect_pitches)):
                     other_pitch = incorrect_pitches[j]
-                    if other_pitch["time"] == pitch["time"] and other_pitch["reference_pitch"] is not None:
-                        also_played.append((other_pitch, abs(other_pitch["reference_pitch"] - pitch["user_pitch"])))
+                    if (
+                        other_pitch["time"] == pitch["time"]
+                        and other_pitch["reference_pitch"] is not None
+                    ):
+                        also_played.append(
+                            (
+                                other_pitch,
+                                abs(
+                                    other_pitch["reference_pitch"] - pitch["user_pitch"]
+                                ),
+                            )
+                        )
 
                 # if the user played a different pitch at the same time
                 if len(also_played) > 0:
                     # find the closest pitch
                     closest_pitch = min(also_played, key=lambda x: x[1])
                     if closest_pitch[0]["reference_pitch"] != pitch["user_pitch"]:
-                        errors["incorrect_pitches"].append({
-                            "reference_pitch": closest_pitch[0]["reference_pitch"],
-                            "user_pitch": pitch["user_pitch"],
-                            "time": pitch["time"]
-                        })
+                        errors["incorrect_pitches"].append(
+                            {
+                                "reference_pitch": closest_pitch[0]["reference_pitch"],
+                                "user_pitch": pitch["user_pitch"],
+                                "time": pitch["time"],
+                            }
+                        )
                     # remove the closest pitch from the list
                     incorrect_pitches.remove(closest_pitch[0])
                     incorrect_pitches.pop(0)
 
-
                 # if we didn't find a matching pitch, then the user played an extra note
                 else:
-                    errors["extra_notes"].append({
-                        "user_pitch": pitch["user_pitch"],
-                        "time": pitch["time"]
-                    })
+                    errors["extra_notes"].append(
+                        {"user_pitch": pitch["user_pitch"], "time": pitch["time"]}
+                    )
                     incorrect_pitches.pop(0)
 
             # if the user missed a pitch that was in the reference
@@ -205,29 +232,43 @@ class Analyzer:
                 also_played = []
                 for j in range(1, len(incorrect_pitches)):
                     other_pitch = incorrect_pitches[j]
-                    if other_pitch["time"] == pitch["time"] and other_pitch["user_pitch"] is not None:
-                        also_played.append((other_pitch, abs(other_pitch["user_pitch"] - pitch["reference_pitch"])))
+                    if (
+                        other_pitch["time"] == pitch["time"]
+                        and other_pitch["user_pitch"] is not None
+                    ):
+                        also_played.append(
+                            (
+                                other_pitch,
+                                abs(
+                                    other_pitch["user_pitch"] - pitch["reference_pitch"]
+                                ),
+                            )
+                        )
 
                 # if the user played a different pitch at the same time
                 if len(also_played) > 0:
                     # find the closest pitch
                     closest_pitch = min(also_played, key=lambda x: x[1])
                     if closest_pitch[0]["user_pitch"] != pitch["reference_pitch"]:
-                        errors["incorrect_pitches"].append({
-                            "reference_pitch": pitch["reference_pitch"],
-                            "user_pitch": closest_pitch[0]["user_pitch"],
-                            "time": pitch["time"]
-                        })
+                        errors["incorrect_pitches"].append(
+                            {
+                                "reference_pitch": pitch["reference_pitch"],
+                                "user_pitch": closest_pitch[0]["user_pitch"],
+                                "time": pitch["time"],
+                            }
+                        )
                     # remove the closest pitch from the list
                     incorrect_pitches.remove(closest_pitch[0])
                     incorrect_pitches.pop(0)
 
                 # if we didn't find a matching pitch, then the user missed a note
                 else:
-                    errors["missing_notes"].append({
-                        "reference_pitch": pitch["reference_pitch"],
-                        "time": pitch["time"]
-                    })
+                    errors["missing_notes"].append(
+                        {
+                            "reference_pitch": pitch["reference_pitch"],
+                            "time": pitch["time"],
+                        }
+                    )
                     incorrect_pitches.pop(0)
 
         # look through missing/extra notes to see if they were just played at the wrong time
@@ -236,12 +277,17 @@ class Analyzer:
             missing_note = errors["missing_notes"][i]
             for j in range(len(errors["extra_notes"])):
                 extra_note = errors["extra_notes"][j]
-                if abs(missing_note["time"] - extra_note["time"]) < 400 and missing_note["reference_pitch"] == extra_note["user_pitch"]:
-                    errors["timing_issues"].append({
-                        "reference_pitch": missing_note["reference_pitch"],
-                        "reference_time": missing_note["time"],
-                        "time": extra_note["time"],
-                    })
+                if (
+                    abs(missing_note["time"] - extra_note["time"]) < 400
+                    and missing_note["reference_pitch"] == extra_note["user_pitch"]
+                ):
+                    errors["timing_issues"].append(
+                        {
+                            "reference_pitch": missing_note["reference_pitch"],
+                            "reference_time": missing_note["time"],
+                            "time": extra_note["time"],
+                        }
+                    )
                     errors["missing_notes"].pop(i)
                     errors["extra_notes"].pop(j)
                     i -= 1
@@ -251,15 +297,22 @@ class Analyzer:
         return errors
 
     def clean_midi(self, mid):
-        return reformat_midi(mid, verbose=False, write_to_file=False, override_time_info=True)
+        return reformat_midi(
+            mid, verbose=False, write_to_file=False, override_time_info=True
+        )
 
     def quantize_midi(self, mid, step_size=0.5):
-        reformatted = reformat_midi(mid, verbose=False, write_to_file=False, override_time_info=True)
+        reformatted = reformat_midi(
+            mid, verbose=False, write_to_file=False, override_time_info=True
+        )
         matrix = mid_to_matrix(reformatted)
-        quantizer = quantize_matrix(matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False)
+        quantizer = quantize_matrix(
+            matrix, stepSize=0.25, quantizeOffsets=True, quantizeDurations=False
+        )
         return matrix_to_mid(quantizer)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Example usage
     analyzer = Analyzer()
     reference_file = "../assets/midi/twinkle-twinkle-little-star.mid"
