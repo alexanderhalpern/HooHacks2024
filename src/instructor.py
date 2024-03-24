@@ -305,7 +305,18 @@ def get_song_snippets(input_midi: MidiFile) -> List[MidiFile]:
                 current_snippet.tracks.append(current_track)
                 i = pair[1]
 
-    return snippets
+    # each snippet should contain all snippets before itself as well (0 1 2, 0 1 2 3, 0 1 2 3 4, etc.)
+    additive_snippets = []
+    for i in range(len(snippets)):
+        additive_snippets.append(MidiFile(ticks_per_beat=input_midi.ticks_per_beat))
+        additive_snippets[i].tracks.append(MidiTrack())
+        for j in range(i + 1):
+            for msg in snippets[j].tracks[0]:
+                additive_snippets[i].tracks[0].append(msg)
+
+    return additive_snippets
+
+
 
 
 
