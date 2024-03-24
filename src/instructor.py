@@ -3,7 +3,7 @@ from mido import MidiFile, MidiTrack
 from player import Player
 from analyzer import Analyzer
 from typing import List
-
+import requests
 
 class Instructor:
 
@@ -23,6 +23,7 @@ class Instructor:
         self.type = "friendly"
         self.player = player
         self.analyzer = analyzer
+        self.lesson_state = "not_started"
 
     # def lesson(song)
     def lesson(self, input_song_midi: mido.MidiFile) -> None:
@@ -41,13 +42,19 @@ class Instructor:
         current_snippet_idx = 0
         while len(reference_snippets) > 0:
 
+            requests.get('http://localhost:5000/setState?state=demoing')
+
             # *play* the next snippet
             self.player.demo(reference_snippets[current_snippet_idx])
+
+            requests.get('http://localhost:5000/setState?state=recording')
 
             # *get* user attempt
             student_attempt = self.player.record_attempt(
                 reference_snippets[current_snippet_idx]
             )
+
+            requests.get('http://localhost:5000/setState?state=feedback')
 
             # *analyze* their mistakes
             is_sufficient, mistakes = self.analyzer.judge_attempt(
@@ -59,6 +66,8 @@ class Instructor:
                 self._correct_mistakes(mistakes)
                 continue
             current_snippet_idx += 1
+
+        requests.get('http://localhost:5000/setState?state=done')
 
     def _correct_mistakes(self, mistake_timeline: dict) -> None:
         """
@@ -76,7 +85,7 @@ class Instructor:
 
             # TODO connect to user interface
             print("You're almost there! There's just one last thing to fix before we move on:")
-            print(advice)
+            requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
 
         # if the user made multiple mistakes, correct the most severe one
         else:
@@ -85,7 +94,7 @@ class Instructor:
 
             # TODO connect to user interface
             print("Here's one thing you can fix to make your performance even better:")
-            print(advice)
+            requests.get('http://localhost:5000/setFeedback?feedback=' + advice)
 
 
     def _find_worst_mistake(self, mistake_timeline: dict) -> dict:

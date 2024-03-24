@@ -28,7 +28,7 @@ class SongFinder:
                 # donwload the first midi file
                 # TODO add a way to select which midi file to download
                 for i in range(len(search_results)):
-                    midi = self._download_midi(f"https://bitmidi.com{search_results[i][1]}")
+                    midi = self._download_midi(search_results[i][1])
                     if midi:
                         return midi
             else:
@@ -38,6 +38,8 @@ class SongFinder:
 
 
     def _download_midi(self, midi_url):
+
+        midi_url = f"https://bitmidi.com{midi_url}"
 
         # Set headers to mimic a browser request
         headers = {
@@ -82,7 +84,28 @@ class SongFinder:
         else:
             print("Failed to download MIDI file.")
 
+def get_search_results(query):
+    search_url = f"https://bitmidi.com/search?q={query.replace(' ', '+')}"
+
+    # Set headers to mimic a browser request
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+
+    # Send a GET request to the search URL with headers
+    response = requests.get(search_url, headers=headers)
+
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # Find all anchor tags with class 'searchResult'
+        search_results = soup.find_all('a', class_='pointer no-underline fw4 white underline-hover')
+
+        if search_results:
+            # Extract MIDI file URLs
+            search_results = [(a.text, a['href']) for a in search_results]
+
+            return search_results
+
 
 if __name__ == '__main__':
-    sf = SongFinder()
-    sf.search_and_download_midi("twinkle twinkle little star")
+    get_search_results("twinkle twinkle little star")
